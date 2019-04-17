@@ -1,25 +1,23 @@
 package thewho
 
-import java.util.concurrent.TimeUnit.SECONDS
+import cats.effect.IO
+import fs2.StreamApp.ExitCode
+import fs2.{Stream, StreamApp}
+import org.http4s.server.blaze.BlazeBuilder
+import scalaz.zio.DefaultRuntime
+import thewho.http.AuthHttpService.authHttpService
 
-import scalaz.zio.clock.currentTime
-import scalaz.zio.console.{getStrLn, putStrLn}
-import scalaz.zio.{App, ZIO}
-import thewho.auth.{PhoneAuth, decode, login}
+import scala.concurrent.ExecutionContext.Implicits.global
+//import scala.language.implicitConversions
 
-object Main extends App {
+object Main extends StreamApp[IO] {
 
-  override def run(args: List[String]): ZIO[Any, Nothing, Int] =
-    test.provide(TestEnv).fold(printStackTraceAndFail, printResultAndSuccess)
+  val runtime = new DefaultRuntime {}
 
-  def test = for {
-    _           <- putStrLn("choose phone number")
-    phoneNumber <- getStrLn
-    _           <- putStrLn("write your password")
-    password    <- getStrLn
-    currentTime <- currentTime(SECONDS)
-    token       <- login(PhoneAuth(phoneNumber, password), currentTime)
-    decoded     <- decode(token)
-  } yield (decoded, token)
+  val server = BlazeBuilder[IO]
+    .bindHttp(8080, "localhost")
+    .mountService(authHttpService, "/")
+
+  override def stream(args: List[String], requestShutdown: IO[Unit]): Stream[IO, ExitCode] = server.serve
 
 }
