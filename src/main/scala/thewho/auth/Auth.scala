@@ -1,22 +1,29 @@
 package thewho.auth
 
+import java.util.concurrent.TimeUnit.SECONDS
+
 import io.circe.generic.auto._
 import io.circe.parser.{decode => circeDecode}
 import io.circe.syntax._
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+import scalaz.zio.clock.{Clock, currentTime}
 import scalaz.zio.{TaskR, ZIO}
 import thewho.Constants
-import thewho.repository.{Repository, findCredential}
+import thewho.repository.{Repository, createCredential, findCredential}
 
 trait Auth {
-  val auth: Auth.Service[Repository]
+  val auth: Auth.Service[Repository with Clock]
 }
 
 object Auth {
 
   trait Service[R] {
 
-    def login(authInfo: AuthInfo, currentTime: Timestamp): TaskR[R, Token]
+    def login(authInfo: AuthInfo): TaskR[R, Token]
+
+    def signup(authInfo: AuthInfo): TaskR[R, Token]
+
+    def me(token: Token): TaskR[R, AuthId]
 
     def decode(token: Token): TaskR[R, TokenContent]
 
@@ -27,18 +34,19 @@ object Auth {
     private val PRIVATE_KEY = Constants.PRIVATE_KEY_TEST
     private val PUBLIC_KEY = Constants.PUBLIC_KEY_TEST
     private val ALGORITHM = JwtAlgorithm.RS256
-    private val TTL = 5 // 5 seconds
+    private val TTL = 60 // 5 seconds
 
-    override val auth = new Service[Repository] {
+    override val auth = new Service[Repository with Clock] {
 
-      override def login(authInfo: AuthInfo, currentTime: Timestamp) = (
-        findCredential(authInfo.id)
-          >>= (_ validate authInfo)
-          >>= createToken(currentTime + TTL)
-        )
+      override def login(authInfo: AuthInfo) = findCredential(authInfo.id) >>= (_ validate authInfo) >>= createToken
 
-      private def createToken(expirationTime: Timestamp)(credentialId: CredentialId) = for {
-        claim <- ZIO effect JwtClaim(content = TokenContent(credentialId, expirationTime).asJson.noSpaces)
+      override def signup(authInfo: AuthInfo) = createCredential(authInfo).map(_.id) >>= createToken
+
+      override def me(token: Token) = decode(token).map(_.id) >>= findCredential
+
+      def createToken(credentialId: CredentialId): ZIO[Clock, Throwable, String] = for {
+        currentTime <- currentTime(SECONDS)
+        claim       <- ZIO effect JwtClaim(content = TokenContent(credentialId, currentTime + TTL).asJson.noSpaces)
       } yield Jwt encode(claim, PRIVATE_KEY, ALGORITHM)
 
       override def decode(token: Token) = for {

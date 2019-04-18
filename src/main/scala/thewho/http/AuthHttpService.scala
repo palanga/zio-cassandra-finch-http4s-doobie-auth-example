@@ -7,20 +7,22 @@ import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl.io._
 import scalaz.syntax.id._
-import thewho.auth.{PhoneAuth, Token, login}
+import thewho.auth._
 import thewho.zioToCatsIO
 
 object AuthHttpService {
 
-  case class TokenResponse(token: Token)
+  case class TokenWrapper(token: Token)
+
+  case class AuthIdWrapper(authId: AuthId)
 
   val authHttpService = HttpService[IO] {
-    case GET -> Root / "login" / id / secret =>
-      login(PhoneAuth(id, secret), 1234l).map(TokenResponse) |> zioToCatsIO |> (Ok(_))
-    case req@POST -> Root / "login" =>
-      req decode[PhoneAuth] (login(_, 1234l).map(TokenResponse) |> zioToCatsIO |> (Ok(_)))
-    case GET -> Root / "signup" / id / secret =>
-      Map("response" -> "not implemented") |> (Ok(_))
+    case req @ (GET | POST) -> Root / "login" =>
+      req decode[PhoneAuth] (login(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
+    case req @ POST -> Root / "signup" =>
+      req decode[PhoneAuth] (signup(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
+    case req @ (GET | POST) -> Root / "me" =>
+      req decode[TokenWrapper] ((tw: TokenWrapper) => me(tw.token).map(AuthIdWrapper) |> zioToCatsIO |> (Ok(_)))
   }
 
 }

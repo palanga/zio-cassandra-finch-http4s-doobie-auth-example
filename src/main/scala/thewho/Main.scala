@@ -8,7 +8,6 @@ import scalaz.zio.DefaultRuntime
 import thewho.http.AuthHttpService.authHttpService
 
 import scala.concurrent.ExecutionContext.Implicits.global
-//import scala.language.implicitConversions
 
 object Main extends StreamApp[IO] {
 
