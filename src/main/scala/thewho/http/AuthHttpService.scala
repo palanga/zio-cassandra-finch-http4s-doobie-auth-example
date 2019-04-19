@@ -18,11 +18,11 @@ object AuthHttpService {
 
   val authHttpService = HttpService[IO] {
     case req @ (GET | POST) -> Root / "login" =>
-      req decode[PhoneAuth] (login(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
+      req decode [PhoneAuth] (login(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
     case req @ POST -> Root / "signup" =>
-      req decode[PhoneAuth] (signup(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
+      req decode [PhoneAuth] (signup(_).map(TokenWrapper) |> zioToCatsIO |> (Ok(_)))
     case req @ (GET | POST) -> Root / "me" =>
-      req decode[TokenWrapper] ((tw: TokenWrapper) => me(tw.token).map(AuthIdWrapper) |> zioToCatsIO |> (Ok(_)))
+      req decode [TokenWrapper]((tw: TokenWrapper) => me(tw.token).map(AuthIdWrapper) |> zioToCatsIO |> (Ok(_)))
   }
 
 }

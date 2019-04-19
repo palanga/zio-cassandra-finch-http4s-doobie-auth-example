@@ -2,7 +2,7 @@ package thewho
 
 import cats.effect.IO
 import fs2.StreamApp.ExitCode
-import fs2.{Stream, StreamApp}
+import fs2.{ Stream, StreamApp }
 import org.http4s.server.blaze.BlazeBuilder
 import scalaz.zio.DefaultRuntime
 import thewho.http.AuthHttpService.authHttpService

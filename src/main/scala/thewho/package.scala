@@ -9,7 +9,7 @@ import thewho.repository.Repository
 
 package object thewho {
 
-  trait TestEnv extends Repository.Test with Auth.Test with Console.Live with Clock.Live
+  trait TestEnv  extends Repository.Test with Auth.Test with Console.Live with Clock.Live
   object TestEnv extends TestEnv
 
   def zioToCatsIO[A](zio: TaskR[TestEnv, A]) = (zio provide TestEnv) |> runtime.unsafeRun |> (IO(_))

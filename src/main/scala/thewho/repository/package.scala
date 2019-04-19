@@ -1,8 +1,7 @@
 package thewho
 
 import scalaz.zio.ZIO
-import thewho.auth.{AuthId, CredentialId}
-
+import thewho.auth.{ AuthId, CredentialId }
 
 package object repository extends Repository.Service[Repository] {
 
