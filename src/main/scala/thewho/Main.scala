@@ -1,22 +1,32 @@
 package thewho
 
-import cats.effect.IO
-import fs2.StreamApp.ExitCode
-import fs2.{ Stream, StreamApp }
-import org.http4s.server.blaze.BlazeBuilder
-import scalaz.zio.DefaultRuntime
-import thewho.http.AuthHttpService.authHttpService
+import org.http4s.server.blaze.BlazeServerBuilder
+import scalaz.zio.interop.catz._
+import scalaz.zio.interop.catz.implicits._
+import scalaz.zio.{ App, DefaultRuntime, Task }
 
-import scala.concurrent.ExecutionContext.Implicits.global
+object Main extends App {
 
-object Main extends StreamApp[IO] {
+  implicit val runtime = new DefaultRuntime {}
 
-  val runtime = new DefaultRuntime {}
+  // TODO #13 make host parametric and maybe move to the http package
+  val app =
+    BlazeServerBuilder[Task]
+      .bindHttp(8080, "localhost")
+      .withHttpApp(http.app)
+      .resource
+      .use(_ => Task.never)
 
-  val server = BlazeBuilder[IO]
-    .bindHttp(8080, "localhost")
-    .mountService(authHttpService, "/")
+  def printStackTraceAndFail(t: Throwable): Int = {
+    t.printStackTrace()
+    1
+  }
 
-  override def stream(args: List[String], requestShutdown: IO[Unit]): Stream[IO, ExitCode] = server.serve
+  def printResultAndSuccess(r: Any): Int = {
+    println(r)
+    0
+  }
+
+  override def run(args: List[String]) = app.fold(printStackTraceAndFail, printResultAndSuccess)
 
 }

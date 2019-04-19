@@ -22,6 +22,7 @@ package object auth extends Auth.Service[Auth with Repository with Clock] {
   type PrivateKey   = String
   type Timestamp    = Long
 
+  // TODO #7 do we need this trait ?
   trait AuthInfo {
 
     def id: AuthId
@@ -30,6 +31,7 @@ package object auth extends Auth.Service[Auth with Repository with Clock] {
 
   }
 
+  // TODO #8 rename id -> userId, CredentialId -> UserId
   case class Credential(id: CredentialId, authInfo: AuthInfo) {
 
     def validate(thatAuthInfo: AuthInfo) =

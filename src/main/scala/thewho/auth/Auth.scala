@@ -17,13 +17,14 @@ trait Auth {
 
 object Auth {
 
+  // TODO #6 create live implementation
   trait Service[R] {
 
     def login(authInfo: AuthInfo): TaskR[R, Token]
 
     def signup(authInfo: AuthInfo): TaskR[R, Token]
 
-    def me(token: Token): TaskR[R, AuthId]
+    def me(token: Token): TaskR[R, List[AuthId]]
 
     def decode(token: Token): TaskR[R, TokenContent]
 
@@ -34,7 +35,7 @@ object Auth {
     private val PRIVATE_KEY = Constants.PRIVATE_KEY_TEST
     private val PUBLIC_KEY  = Constants.PUBLIC_KEY_TEST
     private val ALGORITHM   = JwtAlgorithm.RS256
-    private val TTL         = 60 // 5 seconds
+    private val TTL         = 60 // 60 seconds
 
     override val auth = new Service[Repository with Clock] {
 

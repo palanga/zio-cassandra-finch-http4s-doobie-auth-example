@@ -3,7 +3,7 @@ package thewho.repository
 import java.util.concurrent.atomic.AtomicInteger
 
 import scalaz.zio.{ TaskR, ZIO }
-import thewho.auth.{ AuthId, AuthInfo, AuthSecret, Credential, CredentialId }
+import thewho.auth._
 
 trait Repository {
   val repository: Repository.Service[Any]
@@ -11,6 +11,8 @@ trait Repository {
 
 object Repository {
 
+  // TODO #12 we don't need all of these methods, please cleanup
+  // TODO #4 create a live implementation
   trait Service[R] {
 
     def findAuthSecret(authId: AuthId): TaskR[R, AuthSecret]
@@ -19,7 +21,7 @@ object Repository {
 
     def findCredential(authId: AuthId): TaskR[R, Credential]
 
-    def findCredential(credentialId: CredentialId): TaskR[R, AuthId]
+    def findCredential(credentialId: CredentialId): TaskR[R, List[AuthId]]
 
     def createCredential(authInfo: AuthInfo): TaskR[R, Credential]
 
@@ -65,6 +67,7 @@ object Repository {
       override def findCredential(credentialId: CredentialId) =
         ZIO
           .fromOption(CREDENTIAL_ID_TO_AUTH_ID get credentialId)
+          .map(_ :: Nil)
           .mapError(_ => new Exception(s"Couldn't find credential $credentialId"))
 
       override def createCredential(authInfo: AuthInfo) =
