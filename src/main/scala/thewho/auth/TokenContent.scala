@@ -1,3 +1,3 @@
 package thewho.auth
 
-case class TokenContent(id: CredentialId, exp: Timestamp)
+case class TokenContent(id: UserId, exp: Timestamp)

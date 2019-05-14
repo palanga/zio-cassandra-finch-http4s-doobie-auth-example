@@ -1,23 +1,23 @@
 package thewho
 
 import scalaz.zio.ZIO
-import thewho.auth.{ AuthId, CredentialId }
+import thewho.auth.{ Credential, CredentialId, UserId }
 
 package object repository extends Repository.Service[Repository] {
 
-  override def findAuthSecret(authId: AuthId) =
-    ZIO accessM (_.repository findAuthSecret authId)
+  override def findCredentialSecret(credentialId: CredentialId) =
+    ZIO accessM (_.repository findCredentialSecret credentialId)
 
-  override def findCredentialId(authId: AuthId) =
-    ZIO accessM (_.repository findCredentialId authId)
+  override def findUserId(credentialId: CredentialId) =
+    ZIO accessM (_.repository findUserId credentialId)
 
-  override def findCredential(authId: AuthId) =
-    ZIO accessM (_.repository findCredential authId)
+  override def findUser(credentialId: CredentialId) =
+    ZIO accessM (_.repository findUser credentialId)
 
-  override def findCredential(credentialId: CredentialId) =
-    ZIO accessM (_.repository findCredential credentialId)
+  override def findCredentialIds(userId: UserId) =
+    ZIO accessM (_.repository findCredentialIds userId)
 
-  override def createCredential(authInfo: auth.AuthInfo) =
-    ZIO accessM (_.repository createCredential authInfo)
+  override def createCredential(credential: Credential) =
+    ZIO accessM (_.repository createCredential credential)
 
 }

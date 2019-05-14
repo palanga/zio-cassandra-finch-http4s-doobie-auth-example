@@ -9,7 +9,7 @@ import pdi.jwt.{ Jwt, JwtAlgorithm, JwtClaim }
 import scalaz.zio.clock.{ currentTime, Clock }
 import scalaz.zio.{ TaskR, ZIO }
 import thewho.Constants
-import thewho.repository.{ createCredential, findCredential, Repository }
+import thewho.repository.{ createCredential, findUser, Repository }
 
 trait Auth {
   val auth: Auth.Service[Repository with Clock]
@@ -20,11 +20,9 @@ object Auth {
   // TODO #6 create live implementation
   trait Service[R] {
 
-    def login(authInfo: AuthInfo): TaskR[R, Token]
+    def login(credential: Credential): TaskR[R, Token]
 
-    def signup(authInfo: AuthInfo): TaskR[R, Token]
-
-    def me(token: Token): TaskR[R, List[AuthId]]
+    def signup(credential: Credential): TaskR[R, Token]
 
     def decode(token: Token): TaskR[R, TokenContent]
 
@@ -39,16 +37,14 @@ object Auth {
 
     override val auth = new Service[Repository with Clock] {
 
-      override def login(authInfo: AuthInfo) = findCredential(authInfo.id) >>= (_ validate authInfo) >>= createToken
+      override def login(credential: Credential) = findUser(credential.id) >>= (_ validate credential) >>= createToken
 
-      override def signup(authInfo: AuthInfo) = createCredential(authInfo).map(_.id) >>= createToken
+      override def signup(credential: Credential) = createCredential(credential).map(_.id) >>= createToken
 
-      override def me(token: Token) = decode(token).map(_.id) >>= findCredential
-
-      def createToken(credentialId: CredentialId): ZIO[Clock, Throwable, String] =
+      def createToken(userId: UserId): ZIO[Clock, Throwable, String] =
         for {
           currentTime <- currentTime(SECONDS)
-          claim       <- ZIO effect JwtClaim(content = TokenContent(credentialId, currentTime + TTL).asJson.noSpaces)
+          claim       <- ZIO effect JwtClaim(content = TokenContent(userId, currentTime + TTL).asJson.noSpaces)
         } yield Jwt encode (claim, PRIVATE_KEY, ALGORITHM)
 
       override def decode(token: Token) =

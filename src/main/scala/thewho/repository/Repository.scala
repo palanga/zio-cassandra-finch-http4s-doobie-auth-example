@@ -15,15 +15,15 @@ object Repository {
   // TODO #4 create a live implementation
   trait Service[R] {
 
-    def findAuthSecret(authId: AuthId): TaskR[R, AuthSecret]
+    def findCredentialSecret(credentialId: CredentialId): TaskR[R, CredentialSecret]
 
-    def findCredentialId(authId: AuthId): TaskR[R, CredentialId]
+    def findUserId(credentialId: CredentialId): TaskR[R, UserId]
 
-    def findCredential(authId: AuthId): TaskR[R, Credential]
+    def findUser(credentialId: CredentialId): TaskR[R, User]
 
-    def findCredential(credentialId: CredentialId): TaskR[R, List[AuthId]]
+    def findCredentialIds(userId: UserId): TaskR[R, List[CredentialId]]
 
-    def createCredential(authInfo: AuthInfo): TaskR[R, Credential]
+    def createCredential(credential: Credential): TaskR[R, User]
 
   }
 
@@ -31,16 +31,16 @@ object Repository {
 
     import scala.collection.mutable.{ Map => MutableMap }
 
-    private val AUTH_ID_TO_AUTH_SECRET = MutableMap[AuthId, AuthSecret](
+    private val CREDENTIAL_ID_TO_CREDENTIAL_SECRET = MutableMap[CredentialId, CredentialSecret](
       "420606" -> "skrik",
       "475711" -> "impression"
     )
 
-    private val AUTH_ID_TO_CREDENTIAL_ID = MutableMap[AuthId, CredentialId](
+    private val CREDENTIAL_ID_TO_USER_ID = MutableMap[CredentialId, UserId](
       "420606" -> 0
     )
 
-    private val CREDENTIAL_ID_TO_AUTH_ID = MutableMap[CredentialId, AuthId](
+    private val USER_ID_TO_CREDENTIAL_ID = MutableMap[UserId, CredentialId](
       0 -> "420606"
     )
 
@@ -48,36 +48,36 @@ object Repository {
 
     override val repository = new Service[Any] {
 
-      override def findAuthSecret(authId: AuthId) =
+      override def findCredentialSecret(credentialId: CredentialId) =
         ZIO
-          .fromOption(AUTH_ID_TO_AUTH_SECRET get authId)
-          .mapError(_ => new Exception(s"Couldn't find secret for auth id $authId"))
+          .fromOption(CREDENTIAL_ID_TO_CREDENTIAL_SECRET get credentialId)
+          .mapError(_ => new Exception(s"Couldn't find secret for credential id $credentialId"))
 
-      override def findCredentialId(authId: AuthId) =
+      override def findUserId(credentialId: CredentialId) =
         ZIO
-          .fromOption(AUTH_ID_TO_CREDENTIAL_ID get authId)
-          .mapError(_ => new Exception(s"Couldn't find credential id for auth id $authId"))
+          .fromOption(CREDENTIAL_ID_TO_USER_ID get credentialId)
+          .mapError(_ => new Exception(s"Couldn't find credential id for credential id $credentialId"))
 
-      override def findCredential(authId: AuthId) =
+      override def findUser(credentialId: CredentialId) =
         for {
-          secret       <- findAuthSecret(authId)
-          credentialId <- findCredentialId(authId)
-        } yield Credential from (credentialId, authId, secret)
+          secret <- findCredentialSecret(credentialId)
+          userId <- findUserId(credentialId)
+        } yield User from (userId, credentialId, secret)
 
-      override def findCredential(credentialId: CredentialId) =
+      override def findCredentialIds(userId: UserId) =
         ZIO
-          .fromOption(CREDENTIAL_ID_TO_AUTH_ID get credentialId)
+          .fromOption(USER_ID_TO_CREDENTIAL_ID get userId)
           .map(_ :: Nil)
-          .mapError(_ => new Exception(s"Couldn't find credential $credentialId"))
+          .mapError(_ => new Exception(s"Couldn't find user $userId"))
 
-      override def createCredential(authInfo: AuthInfo) =
+      override def createCredential(credential: Credential) =
         for {
-          _ <- findCredential(authInfo.id).flip.mapError(_ => new Exception(s"Auth id ${authInfo.id} already exists"))
+          _ <- findUser(credential.id).flip.mapError(_ => new Exception(s"Credential id ${credential.id} already exists"))
         } yield {
-          val credId = COUNTER.incrementAndGet()
-          AUTH_ID_TO_AUTH_SECRET += (authInfo.id   -> authInfo.secret)
-          AUTH_ID_TO_CREDENTIAL_ID += (authInfo.id -> credId)
-          Credential(credId, authInfo)
+          val userId = COUNTER.incrementAndGet()
+          CREDENTIAL_ID_TO_CREDENTIAL_SECRET += (credential.id   -> credential.secret)
+          CREDENTIAL_ID_TO_USER_ID += (credential.id -> userId)
+          User(userId, credential)
         }
 
     }
