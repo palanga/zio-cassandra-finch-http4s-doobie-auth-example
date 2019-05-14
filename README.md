@@ -19,6 +19,7 @@ Prerequisites
 - java 8
 - sbt 1.2.8
 - scala 2.12.8
+- Docker Desktop 2.0.0.0-mac82
 
 
 Run
