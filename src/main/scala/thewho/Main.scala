@@ -17,16 +17,6 @@ object Main extends App {
       .resource
       .use(_ => Task.never)
 
-  def printStackTraceAndFail(t: Throwable): Int = {
-    t.printStackTrace()
-    1
-  }
-
-  def printResultAndSuccess(r: Any): Int = {
-    println(r)
-    0
-  }
-
-  override def run(args: List[String]) = app.fold(printStackTraceAndFail, printResultAndSuccess)
+  override def run(args: List[String]) = app.orDie
 
 }
