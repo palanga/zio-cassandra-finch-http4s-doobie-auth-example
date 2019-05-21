@@ -20,7 +20,7 @@ object Auth {
   // TODO #6 create live implementation
   trait Service[R] {
 
-    def login(authInfo: AuthInfo): TaskR[R, Token]
+    def login(authInfo: AuthInfo): TaskR[R, TokenResponse]
 
     def signup(authInfo: AuthInfo): TaskR[R, Token]
 
@@ -39,11 +39,16 @@ object Auth {
 
     override val auth = new Service[Repository with Clock] {
 
-      override def login(authInfo: AuthInfo) = findCredential(authInfo.id) >>= (_ validate authInfo) >>= createToken
+      override def login(authInfo: AuthInfo) = findCredential(authInfo.id) >>= (_ validate authInfo) >>= tokenResponse
 
       override def signup(authInfo: AuthInfo) = createCredential(authInfo).map(_.id) >>= createToken
 
       override def me(token: Token) = decode(token).map(_.id) >>= findCredential
+
+      def tokenResponse(credentialId: CredentialId): ZIO[Clock, Throwable, TokenResponse] = 
+        for {
+          newToken <- createToken(credentialId)
+        } yield TokenResponse(token = newToken)
 
       def createToken(credentialId: CredentialId): ZIO[Clock, Throwable, String] =
         for {
