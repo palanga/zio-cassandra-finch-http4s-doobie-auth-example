@@ -1,0 +1,14 @@
+version: "3.7"
+
+networks:
+  net:
+    driver: bridge
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    networks:
+      - net
+    ports:
+      - 5432:5432
