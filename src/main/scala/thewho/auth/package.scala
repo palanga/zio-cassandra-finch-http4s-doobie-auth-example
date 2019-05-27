@@ -1,14 +1,19 @@
 package thewho
 
-import scalaz.zio.clock.Clock
 import scalaz.zio.ZIO
+import scalaz.zio.clock.Clock
 import thewho.repository.Repository
 
 package object auth extends Auth.Service[Auth with Repository with Clock] {
 
+  override def signup(credential: Credential) = ZIO accessM (_.auth signup credential)
+
   override def login(credential: Credential) = ZIO accessM (_.auth login credential)
 
-  override def signup(credential: Credential) = ZIO accessM (_.auth signup credential)
+  override def changePassword(credentialSecretUpdate: CredentialSecretUpdateForm) =
+    ZIO accessM (_.auth changePassword credentialSecretUpdate)
+
+  override def signout(credential: Credential) = ZIO accessM (_.auth signout credential)
 
   override def decode(token: Token) = ZIO accessM (_.auth decode token)
 

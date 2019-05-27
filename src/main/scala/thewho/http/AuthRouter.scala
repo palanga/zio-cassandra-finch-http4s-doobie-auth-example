@@ -16,10 +16,14 @@ object AuthRouter {
   // TODO #9 improve error handling
   // TODO #10 make it TaskR so we can provide the R at a higher level
   val authRouter: HttpRoutes[Task] = HttpRoutes.of[Task] {
-    case req @ (GET | POST) -> Root / "login" =>
-      req decode [Credential] (login(_).provide(TestEnv) >>= (Ok(_)))
     case req @ POST -> Root / "signup" =>
       req decode [Credential] (signup(_).provide(TestEnv) >>= (Ok(_)))
+    case req @ (GET | POST) -> Root / "login" =>
+      req decode [Credential] (login(_).provide(TestEnv) >>= (Ok(_)))
+    case req @ POST -> Root / "change-password" =>
+      req decode [CredentialSecretUpdateForm] (changePassword(_).provide(TestEnv) >>= (Ok(_)))
+    case req @ POST -> Root / "signout" =>
+      req decode [Credential] (signout(_).provide(TestEnv) >>= (Ok(_)))
   }
 
 }
