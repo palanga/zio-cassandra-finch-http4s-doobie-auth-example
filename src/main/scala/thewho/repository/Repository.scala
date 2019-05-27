@@ -9,20 +9,28 @@ trait Repository {
 
 object Repository {
 
-  // TODO #4 create a live implementation
   trait Service[R] {
 
-    def findCredentialSecret(credentialId: CredentialId): TaskR[R, CredentialSecret]
+    def heartBeat: TaskR[R, Unit]
 
-    def findUserId(credentialId: CredentialId): TaskR[R, UserId]
+    def createUser(credential: Credential): TaskR[R, User]
+
+    def findUser(userId: UserId): TaskR[R, User]
 
     def findUser(credentialId: CredentialId): TaskR[R, User]
 
-    def createCredential(credential: Credential): TaskR[R, User]
+    def deleteUser(userId: UserId): TaskR[R, UserId]
+
+    def createCredential(userId: UserId, credential: Credential): TaskR[R, Credential]
+
+    def findCredential(credentialId: CredentialId): TaskR[R, Credential]
+
+    def findCredential(userId: UserId): TaskR[R, Credential]
+
+    def updateCredential(credential: Credential): TaskR[R, Credential]
+
+    def deleteCredential(credentialId: CredentialId): TaskR[R, CredentialId]
 
   }
-
-  trait Test  extends TestRepository
-  object Test extends Test
 
 }

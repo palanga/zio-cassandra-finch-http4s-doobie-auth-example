@@ -1,23 +1,37 @@
 package thewho
 
-import scalaz.zio.ZIO
-import thewho.auth.{ Credential, CredentialId, UserId }
+import scalaz.zio.{ TaskR, ZIO }
+import thewho.auth.{ Credential, CredentialId, User, UserId }
 
 package object repository extends Repository.Service[Repository] {
 
-  override def findCredentialSecret(credentialId: CredentialId) =
-    ZIO accessM (_.repository findCredentialSecret credentialId)
+  override def heartBeat: TaskR[Repository, Unit] = ZIO accessM (_.repository heartBeat)
 
-  override def findUserId(credentialId: CredentialId) =
-    ZIO accessM (_.repository findUserId credentialId)
+  override def createUser(credential: Credential): TaskR[Repository, User] =
+    ZIO accessM (_.repository createUser credential)
 
-  override def findUser(credentialId: CredentialId) =
+  override def findUser(userId: UserId): TaskR[Repository, User] =
+    ZIO accessM (_.repository findUser userId)
+
+  override def findUser(credentialId: CredentialId): ZIO[Repository, Throwable, User] =
     ZIO accessM (_.repository findUser credentialId)
 
-  override def findCredentialIds(userId: UserId) =
-    ZIO accessM (_.repository findCredentialIds userId)
+  override def deleteUser(userId: UserId): ZIO[Repository, Throwable, UserId] =
+    ZIO accessM (_.repository deleteUser userId)
 
-  override def createCredential(credential: Credential) =
-    ZIO accessM (_.repository createCredential credential)
+  override def createCredential(userId: UserId, credential: Credential): ZIO[Repository, Throwable, Credential] =
+    ZIO accessM (_.repository createCredential (userId, credential))
+
+  override def findCredential(credentialId: CredentialId): ZIO[Repository, Throwable, Credential] =
+    ZIO accessM (_.repository findCredential credentialId)
+
+  override def findCredential(userId: UserId): ZIO[Repository, Throwable, Credential] =
+    ZIO accessM (_.repository findCredential userId)
+
+  override def updateCredential(credential: Credential): TaskR[Repository, Credential] =
+    ZIO accessM (_.repository updateCredential credential)
+
+  override def deleteCredential(credentialId: CredentialId): TaskR[Repository, CredentialId] =
+    ZIO accessM (_.repository deleteCredential credentialId)
 
 }
