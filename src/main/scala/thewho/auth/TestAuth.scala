@@ -10,7 +10,7 @@ import scalaz.zio.ZIO
 import scalaz.zio.clock.{ currentTime, Clock }
 import thewho.Constants
 import thewho.auth.Auth.Service
-import thewho.repository.{ createCredential, findUser, Repository }
+import thewho.repository.{ createUser, deleteUser, findUser, updateCredential, Repository }
 
 trait TestAuth extends Auth {
 
@@ -21,11 +21,28 @@ trait TestAuth extends Auth {
 
   override val auth = new Service[Repository with Clock] {
 
+    override def signup(credential: Credential) = createUser(credential).map(_.id) >>= createToken
+
     override def login(credential: Credential) = findUser(credential.id) >>= (_ validate credential) >>= createToken
 
-    override def signup(credential: Credential) = createCredential(credential).map(_.id) >>= createToken
+    override def changePassword(credentialSecretUpdate: CredentialSecretUpdateForm) = credentialSecretUpdate match {
+      case CredentialSecretUpdateForm(credential, newSecret) =>
+        for {
+          user  <- findUser(credential.id)
+          _     <- user validate credential
+          _     <- updateCredential(credential copy (secret = newSecret))
+          token <- createToken(user.id)
+        } yield token
+    }
 
-    def createToken(userId: UserId): ZIO[Clock, Throwable, String] =
+    override def signout(credential: Credential) =
+      for {
+        user <- findUser(credential.id)
+        _    <- user validate credential
+        _    <- deleteUser(user.id)
+      } yield ()
+
+    private def createToken(userId: UserId): ZIO[Clock, Throwable, String] =
       for {
         currentTime <- currentTime(SECONDS)
         claim       <- ZIO effect JwtClaim(content = TokenContent(userId, currentTime + TTL).asJson.noSpaces)
