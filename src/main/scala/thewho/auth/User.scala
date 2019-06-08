@@ -9,10 +9,3 @@ case class User(id: UserId, credential: Credential) {
     else Task fail new Exception("Couldn't validate credential")
 
 }
-
-object User {
-
-  def from(userId: UserId, credentialId: CredentialId, secret: CredentialSecret) =
-    User(userId, Credential(credentialId, secret))
-
-}

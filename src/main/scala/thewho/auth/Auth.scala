@@ -25,7 +25,4 @@ object Auth {
 
   }
 
-  trait Test  extends TestAuth
-  object Test extends Test
-
 }
