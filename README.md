@@ -75,7 +75,7 @@ Contribute
 
 1) Branch off from master
 2) Code
-3) `sbt scalafmt` to format the code
+3) `sbt scalafmtAll` to format the code before pushing.
 4) Write [good commit messages](https://github.com/erlang/otp/wiki/writing-good-commit-messages).
     Please reference the issue number in the commit message description
 5) PR to master
