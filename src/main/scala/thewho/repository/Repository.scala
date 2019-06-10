@@ -1,7 +1,8 @@
 package thewho.repository
 
-import scalaz.zio.TaskR
+import scalaz.zio.ZIO
 import thewho.auth._
+import thewho.repository.error.{ RepositoryException, RepositoryFailure }
 
 trait Repository {
   val repository: Repository.Service[Any]
@@ -11,25 +12,27 @@ object Repository {
 
   trait Service[R] {
 
-    def heartBeat: TaskR[R, Unit]
+    type RepoServiceTask[A] = ZIO[R, RepositoryException, A]
 
-    def createUser(credential: Credential): TaskR[R, User]
+    def heartBeat: ZIO[R, RepositoryFailure, Unit]
 
-    def findUser(userId: UserId): TaskR[R, User]
+    def createUser(credential: Credential): RepoServiceTask[User]
 
-    def findUser(credentialId: CredentialId): TaskR[R, User]
+    def findUser(userId: UserId): RepoServiceTask[User]
 
-    def deleteUser(userId: UserId): TaskR[R, UserId]
+    def findUser(credentialId: CredentialId): RepoServiceTask[User]
 
-    def createCredential(userId: UserId, credential: Credential): TaskR[R, Credential]
+    def deleteUser(userId: UserId): RepoServiceTask[UserId]
 
-    def findCredential(credentialId: CredentialId): TaskR[R, Credential]
+    def createCredential(credential: Credential, userId: UserId): RepoServiceTask[Credential]
 
-    def findCredential(userId: UserId): TaskR[R, Credential]
+    def findCredential(credentialId: CredentialId): RepoServiceTask[Credential]
 
-    def updateCredential(credential: Credential): TaskR[R, Credential]
+    def findCredential(userId: UserId): RepoServiceTask[Credential]
 
-    def deleteCredential(credentialId: CredentialId): TaskR[R, CredentialId]
+    def updateCredential(credential: Credential): RepoServiceTask[Credential]
+
+    def deleteCredential(credentialId: CredentialId): RepoServiceTask[CredentialId]
 
   }
 
