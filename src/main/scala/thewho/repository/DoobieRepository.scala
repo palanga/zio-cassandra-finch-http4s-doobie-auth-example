@@ -1,107 +1,167 @@
 package thewho.repository
 
 import doobie._
-import doobie.implicits._
-import scalaz.zio.{ Task, ZIO }
+import doobie.util.Read
 import scalaz.zio.interop.catz._
+import scalaz.zio.{ IO, Task }
 import thewho.auth.{ Credential, CredentialId, User, UserId }
 import thewho.repository.Repository.Service
+import thewho.repository.error._
 
-// TODO extract the queries.
 trait DoobieRepository extends Repository {
 
   protected def xa: Transactor[Task]
 
   override final val repository = new Service[Any] {
 
-    override final def heartBeat: Task[Unit] =
-      sql"""SELECT true""".query[Boolean].option.transact(xa).flatMap {
-        case Some(_) => ZIO.succeed(())
-        case None    => ZIO.fail(new Exception("DB heartbeat failed"))
-      }
+    import syntax._
 
-    private def createUser: Task[UserId] =
-      sql"""INSERT INTO users DEFAULT VALUES""".update
-        .withUniqueGeneratedKeys[Int]("id")
-        .transact(xa)
+    override final def heartBeat: IO[RepositoryFailure, Unit] = sql.heartBeat._query[Unit].map(_ => ())
 
-    // TODO the recovery with _catchAll_ and _mapError_ and _initCause_ is shit. Maybe use _orElse_
-    // TODO and take a look to what happens with the errors. Do they accumulate ? Or just the last one is kept ?
-    override final def createUser(credential: Credential): Task[User] =
+    private def createUser: IO[RepositoryException, UserId] = sql.user.create._create[UserId]
+
+    // TODO Take a look to what happens with the errors. Do they accumulate ? Or just the last one is kept ?
+    override final def createUser(credential: Credential): IO[RepositoryException, User] =
       for {
         userId <- createUser
-        _      <- createCredential(userId, credential).catchAll(t1 => deleteUser(userId).mapError(_ initCause t1))
+        _      <- createCredential(credential, userId).catchAll(_ => deleteUser(userId))
       } yield User(userId, credential)
 
-    override final def findUser(userId: UserId): Task[User] =
+    override final def findUser(userId: UserId): IO[RepositoryException, User] =
       for {
         credential <- findCredential(userId)
       } yield User(userId, credential)
 
-    override final def findUser(credentialId: CredentialId): Task[User] =
+    override final def findUser(credentialId: CredentialId): IO[RepositoryException, User] =
       for {
         credential <- findCredential(credentialId)
-        userId <- sql"""SELECT (user_id) FROM credentials WHERE id = $credentialId"""
-                   .query[UserId]
-                   .option
-                   .transact(xa)
-                   .flatMap {
-                     case Some(value) => Task succeed value
-                     case None        => Task fail new Exception(s"Couldn't find credential $credentialId")
-                   }
+        userId     <- sql.user.find(credentialId)._queryOrErrorWith[UserId](UserNotFound)
+
       } yield User(userId, credential)
 
-    override final def deleteUser(userId: UserId): Task[UserId] =
+    override final def deleteUser(userId: UserId): IO[RepositoryException, UserId] =
       for {
         credential <- findCredential(userId)
         _          <- deleteCredential(credential.id)
-        _ <- sql"""DELETE FROM users WHERE id = $userId""".update.run.transact(xa).flatMap {
-              case 1 => Task succeed userId
-              case 0 => Task fail new Exception(s"Couldn't delete user $userId")
-            }
+        _          <- sql.user.delete(userId)._update
       } yield userId
 
     // TODO curryfy and flip args so we can createUser flatMap createCredential(credential).
-    override final def createCredential(userId: UserId, credential: Credential): Task[Credential] =
-      sql"""
-           |INSERT INTO credentials (id, secret, user_id)
-           |VALUES (${credential.id}, ${credential.secret}, $userId)""".stripMargin.update.run
-        .transact(xa)
-        .map(_ => credential)
+    override final def createCredential(credential: Credential, userId: UserId): IO[RepositoryException, Credential] =
+      sql.credential.create(credential)(userId)._updateOrErrorWith(NoCredentialsCreated).map(_ => credential)
 
-    override final def findCredential(credentialId: CredentialId): Task[Credential] =
-      sql"""SELECT * FROM credentials WHERE credentials.id = $credentialId"""
-        .query[Credential]
-        .option
-        .transact(xa)
-        .flatMap {
-          case Some(value) => Task succeed value
-          case None        => Task fail new Exception(s"Couldn't find credential $credentialId")
-        }
+    override final def findCredential(credentialId: CredentialId): IO[RepositoryException, Credential] =
+      sql.credential.find(credentialId)._queryOrErrorWith[Credential](CredentialNotFound)
 
-    override final def findCredential(userId: UserId): Task[Credential] =
-      sql"""SELECT * FROM credentials WHERE credentials.user_id = $userId"""
-        .query[Credential]
-        .option
-        .transact(xa)
-        .flatMap {
-          case Some(value) => Task succeed value
-          case None        => Task fail new Exception(s"Couldn't find credential for user $userId")
-        }
+    override final def findCredential(userId: UserId): IO[RepositoryException, Credential] =
+      sql.credential.find(userId)._queryOrErrorWith[Credential](CredentialNotFound)
 
-    override final def updateCredential(credential: Credential): Task[Credential] =
-      sql"""UPDATE credentials SET secret = ${credential.secret} WHERE id = ${credential.id}""".update.run
-        .transact(xa)
-        .flatMap {
-          case 1 => Task succeed credential
-          case 0 => Task fail new Exception(s"Couldn't update credential ${credential.id}")
-        }
+    override final def updateCredential(credential: Credential): IO[RepositoryException, Credential] =
+      sql.credential.update(credential)._updateOrErrorWith(NoCredentialsUpdated).map(_ => credential)
 
-    override final def deleteCredential(credentialId: CredentialId): Task[CredentialId] =
-      sql"""DELETE FROM credentials WHERE id = $credentialId""".update.run.transact(xa).flatMap {
-        case 1 => Task succeed credentialId
-        case 0 => Task fail new Exception(s"Couldn't delete credential $credentialId")
+    override final def deleteCredential(credentialId: CredentialId): IO[RepositoryException, CredentialId] =
+      sql.credential.delete(credentialId)._updateOrErrorWith(NoCredentialsUpdated).map(_ => credentialId)
+
+  }
+
+  object syntax {
+
+    import doobie.implicits._
+
+    type UpdatedRowsCount = Int
+
+    implicit class FragmentSyntax(fragment: Fragment) {
+
+      /**
+       * Run the sql query succeeding with an Option.
+       *
+       * @tparam A The type of the value returned inside the Option
+       */
+      def _query[A: Read]: IO[RepositoryFailure, Option[A]] =
+        fragment.query[A].option.transact(xa).mapError(CommonRepositoryFailure)
+
+      /**
+       * The same as [[_query]] but with a default value in the error channel or
+       * the unwrapped result in the success channel.
+       *
+       * @param ifEmpty The default value for th error channel
+       * @tparam A The type of the value returned in the success channel
+       */
+      def _queryOrErrorWith[A: Read](ifEmpty: RepositoryError): IO[RepositoryException, A] =
+        _query[A] >>= fromOption(ifEmpty)
+
+      /**
+       * Run the sql query returning the number of rows affected.
+       */
+      def _update: IO[RepositoryFailure, UpdatedRowsCount] =
+        fragment.update.run.transact(xa).mapError(CommonRepositoryFailure)
+
+      /**
+       * The same as [[_update]] but failing with the provided error if no rows were affected.
+       *
+       * @param ifNoHits The error in case of no rows affected
+       */
+      def _updateOrErrorWith(ifNoHits: RepositoryError): IO[RepositoryException, UpdatedRowsCount] =
+        _update >>= orErrorWith(ifNoHits)
+
+      /**
+       * Run the sql query returning the key of the value generated by the database.
+       *
+       * @tparam A The type of the generated key
+       */
+      def _create[A: Read]: IO[RepositoryFailure, A] =
+        fragment.update.withUniqueGeneratedKeys[A]("id").transact(xa).mapError(CommonRepositoryFailure)
+
+    }
+
+    private def fromOption[A](ifEmpty: RepositoryError)(option: Option[A]): IO[RepositoryError, A] =
+      option.fold[IO[RepositoryError, A]](IO fail ifEmpty)(IO succeed)
+
+    private def orErrorWith(
+      ifError: RepositoryError
+    )(updatedRowsCount: UpdatedRowsCount): IO[RepositoryError, UpdatedRowsCount] =
+      updatedRowsCount match {
+        case 0 => Task fail ifError
+        case i => Task succeed i
       }
+
+  }
+
+  object sql {
+
+    import doobie.implicits._
+
+    final val heartBeat = sql"""SELECT true"""
+
+    object user {
+
+      final val create = sql"""INSERT INTO users DEFAULT VALUES"""
+
+      def find(credentialId: CredentialId) = sql"""SELECT (user_id) FROM credentials WHERE id = $credentialId"""
+
+      def delete(userId: UserId) = sql"""DELETE FROM users WHERE id = $userId"""
+
+    }
+
+    object credential {
+
+      def create(credential: Credential)(userId: UserId) =
+        sql"""
+             |INSERT INTO credentials (id, secret, user_id)
+             |VALUES (${credential.id}, ${credential.secret}, $userId)
+             |""".stripMargin
+
+      def find(credentialId: CredentialId) =
+        sql"""SELECT * FROM credentials WHERE credentials.id = $credentialId"""
+
+      def find(userId: UserId) = sql"""SELECT * FROM credentials WHERE credentials.user_id = $userId"""
+
+      def update(credential: Credential) =
+        sql"""UPDATE credentials SET secret = ${credential.secret} WHERE id = ${credential.id}"""
+
+      def delete(credentialId: CredentialId) = sql"""DELETE FROM credentials WHERE id = $credentialId"""
+
+    }
 
   }
 
