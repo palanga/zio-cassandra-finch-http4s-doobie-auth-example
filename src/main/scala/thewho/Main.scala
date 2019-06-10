@@ -5,7 +5,6 @@ import scalaz.zio._
 import scalaz.zio.blocking.Blocking
 import scalaz.zio.clock.Clock
 import scalaz.zio.console._
-import scalaz.zio.scheduler.Scheduler
 import thewho.auth.TestAuth
 import thewho.config.ConfigLoader
 import thewho.http.Server
@@ -26,10 +25,9 @@ object Main extends App {
 
                       override protected def xa: HikariTransactor[Task] = transactor
 
-                      override val scheduler: Scheduler.Service[Any] = base.scheduler
-                      override val console: Console.Service[Any]     = base.console
-                      override val clock: Clock.Service[Any]         = base.clock
-                      override val blocking: Blocking.Service[Any]   = base.blocking
+                      override val console: Console.Service[Any]   = base.console
+                      override val clock: Clock.Service[Any]       = base.clock
+                      override val blocking: Blocking.Service[Any] = base.blocking
 
                     }
                   }
