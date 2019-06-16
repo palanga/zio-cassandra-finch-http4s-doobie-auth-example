@@ -18,14 +18,15 @@ trait DoobieRepository extends Repository {
 
     override final def heartBeat: IO[RepositoryFailure, Unit] = sql.heartBeat._query[Unit].map(_ => ())
 
-    private def createUser: IO[RepositoryException, UserId] = sql.user.create._create[UserId]
-
-    // TODO Take a look to what happens with the errors. Do they accumulate ? Or just the last one is kept ?
     override final def createUser(credential: Credential): IO[RepositoryException, User] =
       for {
-        userId <- createUser
-        _      <- createCredential(credential, userId).catchAll(_ => deleteUser(userId))
+        credentialExists <- credentialExists(credential.id)
+        _                <- IO.when(credentialExists)(IO fail CredentialAlreadyExist)
+        userId           <- sql.user.create(credential)._create[UserId]
       } yield User(userId, credential)
+
+    private def credentialExists(credentialId: CredentialId): IO[RepositoryException, Boolean] =
+      findCredential(credentialId).map(_ => true).catchSome { case CredentialNotFound => IO succeed false }
 
     override final def findUser(userId: UserId): IO[RepositoryException, User] =
       for {
@@ -46,7 +47,6 @@ trait DoobieRepository extends Repository {
         _          <- sql.user.delete(userId)._update
       } yield userId
 
-    // TODO curryfy and flip args so we can createUser flatMap createCredential(credential).
     override final def createCredential(credential: Credential, userId: UserId): IO[RepositoryException, Credential] =
       sql.credential.create(credential)(userId)._updateOrErrorWith(NoCredentialsCreated).map(_ => credential)
 
@@ -136,6 +136,15 @@ trait DoobieRepository extends Repository {
     object user {
 
       final val create = sql"""INSERT INTO users DEFAULT VALUES"""
+
+      def create(credential: Credential) =
+        sql"""
+             |with aux as (
+             |  INSERT INTO users DEFAULT VALUES RETURNING id
+             |)
+             |INSERT INTO credentials (id, secret, user_id)
+             |SELECT ${credential.id}, ${credential.secret}, id FROM aux RETURNING user_id
+           """.stripMargin
 
       def find(credentialId: CredentialId) = sql"""SELECT (user_id) FROM credentials WHERE id = $credentialId"""
 
