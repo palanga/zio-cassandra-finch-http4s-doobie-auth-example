@@ -45,7 +45,7 @@ trait syntax {
      *
      * @param ifNoHits The error in case of no rows affected
      */
-    def _updateOrErrorWith(ifNoHits: RepositoryError): IO[RepositoryException, UpdatedRowsCount] =
+    def _updateOrErrorWith(ifNoHits: RepositoryException): IO[RepositoryException, UpdatedRowsCount] =
       _update >>= orErrorWith(ifNoHits)
 
     /**
@@ -62,8 +62,8 @@ trait syntax {
     option.fold[IO[RepositoryError, A]](IO fail ifEmpty)(IO succeed)
 
   private def orErrorWith(
-    ifError: RepositoryError
-  )(updatedRowsCount: UpdatedRowsCount): IO[RepositoryError, UpdatedRowsCount] =
+    ifError: RepositoryException
+  )(updatedRowsCount: UpdatedRowsCount): IO[RepositoryException, UpdatedRowsCount] =
     updatedRowsCount match {
       case 0 => Task fail ifError
       case i => Task succeed i
