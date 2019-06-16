@@ -2,7 +2,7 @@ package thewho.repository
 
 import scalaz.zio.ZIO
 import thewho.auth._
-import thewho.repository.error.{ RepositoryException, RepositoryFailure }
+import thewho.error.{ RepositoryException, RepositoryFailure }
 
 trait Repository {
   val repository: Repository.Service[Any]

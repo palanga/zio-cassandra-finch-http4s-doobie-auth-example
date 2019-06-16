@@ -1,11 +1,12 @@
 package thewho.auth
 
-import scalaz.zio.Task
+import scalaz.zio.IO
+import thewho.error.Forbidden
 
 case class User(id: UserId, credential: Credential) {
 
-  def validate(thatCredential: Credential) =
-    if (credential == thatCredential) Task succeed id
-    else Task fail new Exception("Couldn't validate credential")
+  def validate(thatCredential: Credential): IO[Forbidden.type, UserId] =
+    if (credential == thatCredential) IO succeed id
+    else IO fail Forbidden
 
 }

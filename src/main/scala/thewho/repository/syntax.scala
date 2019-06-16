@@ -6,7 +6,7 @@ import doobie.util.fragment.Fragment
 import doobie.util.transactor.{ Transactor => DoobieTransactor }
 import scalaz.zio.interop.catz._
 import scalaz.zio.{ IO, Task }
-import thewho.repository.error.{ CommonRepositoryFailure, RepositoryError, RepositoryException, RepositoryFailure }
+import thewho.error.{ CommonRepositoryFailure, RepositoryError, RepositoryException, RepositoryFailure }
 
 trait syntax {
 
