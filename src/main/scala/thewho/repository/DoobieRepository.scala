@@ -31,15 +31,12 @@ trait DoobieRepository extends Repository {
       findCredential(credentialId).map(_ => true).catchSome { case CredentialNotFound => IO succeed false }
 
     override final def findUser(userId: UserId): IO[RepositoryException, User] =
-      for {
-        credential <- findCredential(userId)
-      } yield User(userId, credential)
+      findCredential(userId).map(credential => User(userId, credential))
 
     override final def findUser(credentialId: CredentialId): IO[RepositoryException, User] =
       for {
         credential <- findCredential(credentialId)
         userId     <- sql.user.find(credentialId)._queryOrErrorWith[UserId](UserNotFound)
-
       } yield User(userId, credential)
 
     override final def deleteUser(userId: UserId): IO[RepositoryException, UserId] =
