@@ -4,7 +4,7 @@ import doobie.util.transactor.{ Transactor => DoobieTransactor }
 import scalaz.zio.{ IO, Task }
 import thewho.auth.{ Credential, CredentialId, User, UserId }
 import thewho.repository.Repository.Service
-import thewho.repository.error._
+import thewho.error._
 
 trait DoobieRepository extends Repository {
 

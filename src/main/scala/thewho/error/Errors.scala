@@ -1,4 +1,10 @@
-package thewho.repository.error
+package thewho.error
+
+sealed trait AppException extends Exception
+
+//
+//  REPOSITORY ERRORS
+//
 
 /**
  * An ADT equals to: RepositoryError | RepositoryFailure
@@ -13,7 +19,7 @@ package thewho.repository.error
  * }}
  *
  */
-sealed trait RepositoryException extends Exception
+sealed trait RepositoryException extends AppException
 
 /**
  * A "recoverable" error: a kind of error that we would like to map to a status code more specific than a 500.
@@ -40,3 +46,21 @@ sealed trait RepositoryFailure extends RepositoryException {
 
 case class CommonRepositoryFailure(cause: Throwable) extends RepositoryFailure
 case class HeartBeatError(cause: Throwable)          extends RepositoryFailure
+
+//
+//  AUTH ERRORS
+//
+
+sealed trait AuthException extends AppException
+
+sealed trait AuthError extends AuthException
+case object Forbidden  extends AuthError
+
+sealed trait AuthFailure extends AuthException {
+  def cause: Throwable
+}
+
+case class JWTClaimFailure(cause: Throwable)    extends AuthFailure
+case class JWTEncodeFailure(cause: Throwable)   extends AuthFailure
+case class JWTDecodeFailure(cause: Throwable)   extends AuthFailure
+case class CirceDecodeFailure(cause: Throwable) extends AuthFailure

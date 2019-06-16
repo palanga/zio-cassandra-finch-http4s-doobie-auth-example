@@ -2,7 +2,7 @@ package thewho
 
 import scalaz.zio.ZIO
 import thewho.auth.{ Credential, CredentialId, User, UserId }
-import thewho.repository.error.{ RepositoryException, RepositoryFailure }
+import thewho.error.{ RepositoryException, RepositoryFailure }
 
 package object repository extends Repository.Service[Repository] {
 
