@@ -1,10 +1,12 @@
 package thewho.repository.error
 
 /**
- * An ADT = RepositoryError | RepositoryFailure
+ * An ADT equals to: RepositoryError | RepositoryFailure
+ *
+ * In scala 3 this will not be necessary any more.
  *
  * {{
- *   def findUser(id: UserId): IO[RepositoryFailure | RepositoryError, User] =
+ *   def findUser(id: UserId): IO[RepositoryFailure | UserNotFound, User] =
  *     sql"""SELECT * FROM users WHERE users.id = $id""".query[User].option.run
  *       .mapError(CommonRepositoryFailure)
  *       .flatMap{ case Some(user) => IO succeed user; case None => IO fail UserNotFound }
