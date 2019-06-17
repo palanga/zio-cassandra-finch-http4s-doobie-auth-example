@@ -83,3 +83,19 @@ Contribute
 7) If you have to update your branch with master, please `git rebase master` from your branch, and force push.
     Please do not merge master to your branch.
 8) Rebase merge into master
+
+Endpoints
+=========
+
+| ENDPOINT         | METHOD     | INPUT                        | OUTPUT          | STATUS CODES            |
+|------------------|------------|------------------------------| ----------------|-------------------------|
+| /signup          | POST       | `Credential`                 | `TokenResponse` | 201, 209, 422, 500      |
+| /login           | GET, POST  | `Credential`                 | `TokenResponse` | 200, 403, 404, 422, 500 |
+| /change-password | POST       | `CredentialSecretUpdateForm` | `TokenResponse` | 200, 403, 404, 422, 500 |
+| /signout         | POST       | `Credential`                 | `empty`         | 200, 403, 404, 422, 500 |
+
+```
+Credential:                 {id: String, secret: String}
+CredentialSecretUpdateForm: {credential: Credential, newSecret: String}
+TokenResponse:              {token: String}
+```
