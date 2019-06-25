@@ -23,8 +23,8 @@ object ExceptionHandler {
   }
 
   private def repositoryErrorResponseMapper(error: RepositoryError): AppTask[Response[AppTask]] = error match {
-    case UserNotFound | CredentialNotFound         => NotFound()
-    case UserAlreadyExist | CredentialAlreadyExist => Conflict()
+    case UserNotFound | CredentialNotFound => NotFound()
+    case CredentialAlreadyExist            => Conflict()
   }
 
   private def authErrorResponseMapper(e: AuthError): AppTask[Response[AppTask]] = e match {

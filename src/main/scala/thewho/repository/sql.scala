@@ -20,6 +20,8 @@ object sql {
 
     def find(credentialId: CredentialId) = sql"""SELECT (user_id) FROM credentials WHERE id = $credentialId"""
 
+    def find(userId: UserId) = sql"""SELECT id FROM users WHERE id = $userId"""
+
     def delete(userId: UserId) = sql"""DELETE FROM users WHERE id = $userId"""
 
   }
