@@ -25,12 +25,10 @@ sealed trait RepositoryException extends AppException
 
 sealed trait RepositoryError       extends AppError with RepositoryException
 case object UserNotFound           extends RepositoryError
-case object UserAlreadyExist       extends RepositoryError
 case object CredentialNotFound     extends RepositoryError
 case object CredentialAlreadyExist extends RepositoryError
 
 sealed trait RepositoryFailure                       extends AppFailure with RepositoryException
-case object NoCredentialsUpdated                     extends RepositoryFailure
 case object NoCredentialsCreated                     extends RepositoryFailure
 case class CommonRepositoryFailure(cause: Throwable) extends RepositoryFailure with HasCause
 
