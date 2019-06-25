@@ -74,4 +74,6 @@ libraryDependencies += "org.tpolecat"          %% "doobie-postgres"         % "0
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3" // TODO #5 improve logging
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5"
+
 Revolver.settings
