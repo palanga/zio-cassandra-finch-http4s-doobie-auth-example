@@ -32,15 +32,9 @@ object Repository {
 
     def dropCredentialsTable: ZIO[R, RepositoryFailure, Unit]
 
-    def createCredential(credential: Credential, userId: UserId): RepoServiceTask[Credential]
-
-    def findCredential(credentialId: CredentialId): RepoServiceTask[Credential]
-
     def findCredential(userId: UserId): RepoServiceTask[Credential]
 
     def updateCredential(credential: Credential): RepoServiceTask[Credential]
-
-    def deleteCredential(credentialId: CredentialId): RepoServiceTask[CredentialId]
 
   }
 

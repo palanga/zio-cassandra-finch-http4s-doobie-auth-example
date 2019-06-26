@@ -21,8 +21,8 @@ object sql {
          """.stripMargin
 
     /**
-      * This should only be used for testing purposes
-      */
+     * This should only be used for testing purposes
+     */
     def dropTable = sql"""DROP TABLE IF EXISTS users"""
 
     def create(credential: Credential) =
@@ -38,7 +38,11 @@ object sql {
 
     def find(userId: UserId) = sql"""SELECT id FROM users WHERE id = $userId"""
 
-    def delete(userId: UserId) = sql"""DELETE FROM users WHERE id = $userId"""
+    def delete(userId: UserId) =
+      sql"""
+           |DELETE FROM credentials WHERE user_id = $userId;
+           |DELETE FROM users WHERE id = $userId;
+           |""".stripMargin
 
   }
 
@@ -58,15 +62,9 @@ object sql {
          """.stripMargin
 
     /**
-      * This should only be used for testing purposes
-      */
+     * This should only be used for testing purposes
+     */
     def dropTable = sql"""DROP TABLE IF EXISTS credentials"""
-
-    def create(credential: Credential)(userId: UserId) =
-      sql"""
-           |INSERT INTO credentials (id, secret, user_id)
-           |VALUES (${credential.id}, ${credential.secret}, $userId)
-           |""".stripMargin
 
     def find(credentialId: CredentialId) =
       sql"""SELECT * FROM credentials WHERE credentials.id = $credentialId"""
@@ -75,8 +73,6 @@ object sql {
 
     def update(credential: Credential) =
       sql"""UPDATE credentials SET secret = ${credential.secret} WHERE id = ${credential.id}"""
-
-    def delete(credentialId: CredentialId) = sql"""DELETE FROM credentials WHERE id = $credentialId"""
 
   }
 
