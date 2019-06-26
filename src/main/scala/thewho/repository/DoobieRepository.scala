@@ -20,6 +20,10 @@ trait DoobieRepository extends Repository {
 
     override final def heartBeat: IO[RepositoryFailure, Unit] = sql.heartBeat._query[Unit].map(_ => ())
 
+    override def createUsersTable: IO[RepositoryFailure, Unit] = sql.user.createTable._update.const(())
+
+    override def dropUsersTable: IO[RepositoryFailure, Unit] = sql.user.dropTable._update.const(())
+
     override final def createUser(credential: Credential): IO[RepositoryException, User] =
       for {
         credentialExists <- credentialExists(credential.id)
@@ -48,6 +52,10 @@ trait DoobieRepository extends Repository {
         _          <- deleteCredential(credential.id)
         _          <- sql.user.delete(userId)._update
       } yield userId
+
+    override def createCredentialsTable: IO[RepositoryFailure, Unit] = sql.credential.createTable._update.const(())
+
+    override def dropCredentialsTable: IO[RepositoryFailure, Unit] = sql.credential.dropTable._update.const(())
 
     // TODO this should not exist by now
     override final def createCredential(credential: Credential, userId: UserId): IO[RepositoryException, Credential] =

@@ -10,6 +10,12 @@ package object repository extends Repository.Service[Repository] {
 
   override def heartBeat: ZIO[Repository, RepositoryFailure, Unit] = ZIO accessM (_.repository heartBeat)
 
+  override def createUsersTable: ZIO[Repository, RepositoryFailure, Unit] =
+    ZIO accessM (_.repository createUsersTable)
+
+  override def dropUsersTable: ZIO[Repository, RepositoryFailure, Unit] =
+    ZIO accessM (_.repository dropUsersTable)
+
   override def createUser(credential: Credential): RepoTask[User] =
     ZIO accessM (_.repository createUser credential)
 
@@ -21,6 +27,12 @@ package object repository extends Repository.Service[Repository] {
 
   override def deleteUser(userId: UserId): RepoTask[UserId] =
     ZIO accessM (_.repository deleteUser userId)
+
+  override def createCredentialsTable: ZIO[Repository, RepositoryFailure, Unit] =
+    ZIO accessM (_.repository createCredentialsTable)
+
+  override def dropCredentialsTable: ZIO[Repository, RepositoryFailure, Unit] =
+    ZIO accessM (_.repository dropCredentialsTable)
 
   override def createCredential(credential: Credential, userId: UserId): RepoTask[Credential] =
     ZIO accessM (_.repository createCredential (credential, userId))
