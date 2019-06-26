@@ -9,6 +9,22 @@ object sql {
 
   object user {
 
+    /**
+     * This should only be used for testing purposes
+     */
+    def createTable =
+      sql"""
+           |CREATE TABLE users
+           |(
+           |    id SERIAL PRIMARY KEY
+           |)
+         """.stripMargin
+
+    /**
+      * This should only be used for testing purposes
+      */
+    def dropTable = sql"""DROP TABLE IF EXISTS users"""
+
     def create(credential: Credential) =
       sql"""
            |with aux as (
@@ -27,6 +43,24 @@ object sql {
   }
 
   object credential {
+
+    /**
+     * This should only be used for testing purposes
+     */
+    def createTable =
+      sql"""
+           |CREATE TABLE credentials
+           |(
+           |    id      VARCHAR PRIMARY KEY,
+           |    secret  VARCHAR,
+           |    user_id INT references users (id)
+           |)
+         """.stripMargin
+
+    /**
+      * This should only be used for testing purposes
+      */
+    def dropTable = sql"""DROP TABLE IF EXISTS credentials"""
 
     def create(credential: Credential)(userId: UserId) =
       sql"""

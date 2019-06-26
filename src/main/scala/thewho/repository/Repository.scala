@@ -16,6 +16,10 @@ object Repository {
 
     def heartBeat: ZIO[R, RepositoryFailure, Unit]
 
+    def createUsersTable: ZIO[R, RepositoryFailure, Unit]
+
+    def dropUsersTable: ZIO[R, RepositoryFailure, Unit]
+
     def createUser(credential: Credential): RepoServiceTask[User]
 
     def findUser(userId: UserId): RepoServiceTask[User]
@@ -23,6 +27,10 @@ object Repository {
     def findUser(credentialId: CredentialId): RepoServiceTask[User]
 
     def deleteUser(userId: UserId): RepoServiceTask[UserId]
+
+    def createCredentialsTable: ZIO[R, RepositoryFailure, Unit]
+
+    def dropCredentialsTable: ZIO[R, RepositoryFailure, Unit]
 
     def createCredential(credential: Credential, userId: UserId): RepoServiceTask[Credential]
 
