@@ -29,7 +29,6 @@ case object CredentialNotFound     extends RepositoryError
 case object CredentialAlreadyExist extends RepositoryError
 
 sealed trait RepositoryFailure                       extends AppFailure with RepositoryException
-case object NoCredentialsCreated                     extends RepositoryFailure
 case class CommonRepositoryFailure(cause: Throwable) extends RepositoryFailure with HasCause
 
 //

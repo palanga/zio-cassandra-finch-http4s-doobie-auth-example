@@ -1,7 +1,7 @@
 package thewho.repository
 
 import doobie.hikari.HikariTransactor
-import scalaz.zio.{DefaultRuntime, Task, ZIO}
+import scalaz.zio.{ DefaultRuntime, Task, ZIO }
 import thewho.Ops
 import thewho.config.DBConfig
 import thewho.error.RepositoryFailure
@@ -21,8 +21,10 @@ class RepositoryTestSuite extends Ops {
   private val initializeDB = thewho.repository.createUsersTable *> thewho.repository.createCredentialsTable
   private val cleanDB      = thewho.repository.dropCredentialsTable *> thewho.repository.dropUsersTable
 
+  private val allTestCases = UserTest.cases ++ CredentialTest.cases
+
   private val suite: ZIO[Repository, RepositoryFailure, List[Unit]] =
-    cleanDB *> initializeDB *> ZIO.foreach(UserTest.cases)(compareResults[Repository])
+    cleanDB *> initializeDB *> ZIO.foreach(allTestCases)(compareResults[Repository])
 
   private val suiteWithDependencies: ZIO[Any, Throwable, List[Unit]] = Transactor.fromConfig(config).use { transactor =>
     suite.provide(new DoobieRepository {
