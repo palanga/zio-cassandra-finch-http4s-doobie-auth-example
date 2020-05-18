@@ -17,13 +17,23 @@ Prerequisites
 =============
 
 - java 8
-- sbt 1.2.8
-- scala 2.12.8
-- Docker Desktop 2.0.0.0-mac82
+- Docker Desktop 2.0.0.0-mac82 (not needed if running in memory db)
 
 
 Run
 ===
+
+In memory DB
+------------
+
+```shell script
+./sbt app/run
+```
+
+Postgres DB
+-----------
+
+Add the dependency in the `build.sbt` file and change it in the `Main` function.
 
 Add this line to your `/etc/hosts` file:
 
@@ -40,16 +50,17 @@ docker-compose up
 then:
 
 ```bash
-sbt
+./sbt
 ```
 
 and once inside the `sbt` shell:
 
 ```bash
-~reStart
+app/run
 ```
 
-it will listen for code changes and restart the server automatically.
+
+Alternatively you can use the revolver plugin to listen for code changes and restart the server automatically.
 
 
 Debug
@@ -87,15 +98,36 @@ Contribute
 Endpoints
 =========
 
-| ENDPOINT         | METHOD     | INPUT                        | OUTPUT          | STATUS CODES            |
-|------------------|------------|------------------------------| ----------------|-------------------------|
-| /signup          | POST       | `Credential`                 | `TokenResponse` | 201, 209, 422, 500      |
-| /login           | GET, POST  | `Credential`                 | `TokenResponse` | 200, 403, 404, 422, 500 |
-| /change-password | POST       | `CredentialSecretUpdateForm` | `TokenResponse` | 200, 403, 404, 422, 500 |
-| /signout         | POST       | `Credential`                 | `empty`         | 200, 403, 404, 422, 500 |
+| ENDPOINT            | METHOD     | INPUT                           | OUTPUT                     | STATUS CODES                |
+|---------------------|------------|------------------------------   | ---------------------------|-----------------------------|
+| /signup             | POST       | `Credential`                    | `TokenResponse`            | 201, 209, 422, 500          |
+| /login              | GET, POST  | `Credential`                    | `TokenResponse`            | 200, 401 403, 404, 422, 500 |
+| /change-password    | POST       | `CredentialSecretUpdateRequest` | `TokenResponse`            | 200, 401 403, 404, 422, 500 |
+| /signout            | POST       | `Credential`                    | `empty`                    | 204, 401 403, 404, 422, 500 |
+| /find-credential-id | POST       | `UserCredentialIdRequest`       | `UserCredentialIdResponse` | 200, 401 403, 404, 422, 500 |
 
 ```
-Credential:                 {id: String, secret: String}
-CredentialSecretUpdateForm: {credential: Credential, newSecret: String}
-TokenResponse:              {token: String}
+Credential:                    { id: String, secret: String }
+CredentialSecretUpdateRequest: { oldCredential: Credential, newSecret: String }
+TokenResponse:                 { token: String }
+UserCredentialIdRequest:       { token: String }
+UserCredentialIdResponse:      { credentialId: String }
 ```
+
+Troubleshooting
+===============
+
+* To generate key pairs:
+```shell script
+openssl genrsa -out private.pem 1024
+openssl rsa -in private.pem -pubout -outform PEM -out public_key.pem
+openssl pkcs8 -topk8 -inform PEM -in private.pem -out private_key.pem -nocrypt
+```
+
+the las line is needed because of the format java uses.
+
+
+* Sending json thru httpie:
+```shell script
+echo '{ "oldCredential": { "id": "Salvador", "secret": "Dalí" }, "newSecret": "lanadanisman" }' | http POST http://127.0.0.1:8080/change-password -v  
+``` 

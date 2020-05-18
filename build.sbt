@@ -1,79 +1,82 @@
-name := "the-who"
+lazy val root =
+  (project in file("."))
+    .settings(name := "thewho")
+    .settings(version := "0.1")
+    .settings(skip in publish := true)
+    .aggregate(
+      app,
+      core,
+      coreCommon,
+      dbInMemory,
+      dbDoobie,
+      serverHttp4s,
+      utilsZioTest,
+    )
 
-version := "0.1"
+val commonSettings =
+  Def.settings(
+    scalacOptions := ScalaOptions.dev,
+    scalaVersion := "2.13.1",
+    fork in Test := true,
+  )
 
-scalaVersion := "2.12.8"
+lazy val app =
+  (project in file("app"))
+    .settings(name := "app")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.app.toSeq)
+    .dependsOn(
+      serverHttp4s,
+      dbInMemory,
+    )
 
-scalacOptions ++= Seq(
-  "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
-  "-encoding", "utf-8",                // Specify character encoding used by source files.
-  "-explaintypes",                     // Explain type errors in more detail.
-  "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.
-  "-language:existentials",            // Existential types (besides wildcard types) can be written and inferred
-  "-language:experimental.macros",     // Allow macro definition (besides implementation and application)
-  "-language:higherKinds",             // Allow higher-kinded types
-  "-language:implicitConversions",     // Allow definition of implicit functions called views
-  "-language:postfixOps",              // Allow postfix operators
-  "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
-  "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
-  "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
-  "-Xfuture",                          // Turn on future language features.
-  "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
-  "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
-  "-Xlint:constant",                   // Evaluation of a constant arithmetic expression results in an error.
-  "-Xlint:delayedinit-select",         // Selecting member of DelayedInit.
-  "-Xlint:doc-detached",               // A Scaladoc comment appears to be detached from its element.
-  "-Xlint:inaccessible",               // Warn about inaccessible types in method signatures.
-  "-Xlint:infer-any",                  // Warn when a type argument is inferred to be `Any`.
-  "-Xlint:missing-interpolator",       // A string literal appears to be missing an interpolator id.
-  "-Xlint:nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
-  "-Xlint:nullary-unit",               // Warn when nullary methods return Unit.
-  "-Xlint:option-implicit",            // Option.apply used implicit view.
-  "-Xlint:package-object-classes",     // Class or object defined in package object.
-  "-Xlint:poly-implicit-overload",     // Parameterized overloaded implicit methods are not visible as view bounds.
-  "-Xlint:private-shadow",             // A private field (or class parameter) shadows a superclass field.
-  "-Xlint:stars-align",                // Pattern sequence wildcard must align with sequence component.
-  "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
-  "-Xlint:unsound-match",              // Pattern match may not be typesafe.
-  "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
-  "-Ypartial-unification",             // Enable partial unification in type constructor inference
-  "-Ywarn-dead-code",                  // Warn when dead code is identified.
-  "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-  "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
-  "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
-  "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
-  "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
-  "-Ywarn-numeric-widen",              // Warn when numerics are widened.
-  "-Ywarn-macros:after",               // Because implicits were pointed as unused.
-  "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-  "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
-  "-Ywarn-unused:locals",              // Warn if a local definition is unused.
-  "-Ywarn-unused:params",              // Warn if a value parameter is unused.
-  "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
-  "-Ywarn-unused:privates",            // Warn if a private member is unused.
-  "-Ywarn-value-discard",              // Warn when non-Unit expression results are unused.
-)
+lazy val core =
+  (project in file("core"))
+    .settings(name := "core")
+    .settings(commonSettings)
+    .settings(testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")))
+    .settings(libraryDependencies ++= dependencies.core.toSeq)
+    .dependsOn(
+      coreCommon,
+      dbInMemory   % Test,
+      utilsZioTest % Test,
+    )
 
-//scalacOptions += "-Ylog-classpath"
+lazy val coreCommon =
+  (project in file("core/common"))
+    .settings(name := "core-common")
+    .settings(commonSettings)
+    .settings(testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")))
+    .settings(libraryDependencies ++= dependencies.coreCommon.toSeq)
 
-libraryDependencies += "com.github.pureconfig" %% "pureconfig"              % "0.11.0"
-libraryDependencies += "com.github.pureconfig" %% "pureconfig-yaml"         % "0.11.0"
-libraryDependencies += "com.pauldijou"         %% "jwt-core"                % "2.1.0"
-libraryDependencies += "io.circe"              %% "circe-core"              % "0.10.0"
-libraryDependencies += "io.circe"              %% "circe-generic"           % "0.10.0"
-libraryDependencies += "io.circe"              %% "circe-parser"            % "0.10.0"
-libraryDependencies += "org.http4s"            %% "http4s-blaze-server"     % "0.20.1"
-libraryDependencies += "org.http4s"            %% "http4s-circe"            % "0.20.1"
-libraryDependencies += "org.http4s"            %% "http4s-dsl"              % "0.20.1"
-libraryDependencies += "org.scalaz"            %% "scalaz-core"             % "7.2.27"
-libraryDependencies += "org.scalaz"            %% "scalaz-zio"              % "1.0-RC5"
-libraryDependencies += "org.scalaz"            %% "scalaz-zio-interop-cats" % "1.0-RC5"
-libraryDependencies += "org.tpolecat"          %% "doobie-core"             % "0.6.0"
-libraryDependencies += "org.tpolecat"          %% "doobie-hikari"           % "0.6.0"
-libraryDependencies += "org.tpolecat"          %% "doobie-postgres"         % "0.6.0"
+lazy val dbInMemory =
+  (project in file("database/in-memory"))
+    .settings(name := "database-inmemory")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.database.inMemory.toSeq)
+    .dependsOn(coreCommon)
 
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3" // TODO #5 improve logging
+lazy val dbDoobie =
+  (project in file("database/doobie"))
+    .settings(name := "database-doobie")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.database.doobie.toSeq)
+    .dependsOn(coreCommon)
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5"
+lazy val serverHttp4s =
+  (project in file("server/http4s"))
+    .settings(name := "server-http4s")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.server.http4s.toSeq)
+    .dependsOn(
+      core,
+      coreCommon,
+    )
 
-Revolver.settings
+lazy val utilsZioTest =
+  (project in file("utils-zio-test"))
+    .settings(name := "utils.zio.test")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.utilsZioTest.toSeq)
+
+//Revolver.settings
