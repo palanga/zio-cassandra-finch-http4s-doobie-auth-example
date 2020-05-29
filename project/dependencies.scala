@@ -16,7 +16,7 @@ object dependencies {
   )
 
   val app = common ++ Set(
-    logbackClassic,
+    logbackClassic
   )
 
   val core = common ++ commonTest ++ Set(
@@ -45,7 +45,15 @@ object dependencies {
   }
 
   object server {
-    val http4s = common ++ commonTest ++ Set(
+
+    val finch = common ++ Set(
+      finchCore,
+      finchCirce,
+      zioInteropCats,
+//      "io.circe"           %% "circe-parser"     % circeVersion,
+    )
+
+    val http4s = common ++ Set(
       circeCore,
       circeGeneric,
       http4sCirce,
@@ -53,6 +61,7 @@ object dependencies {
       http4sServer,
       zioInteropCats,
     )
+
   }
 
   val utilsZioTest = Set(
@@ -71,6 +80,9 @@ object Definitions {
   val doobieCore     = "org.tpolecat" %% "doobie-core"     % Versions.doobie
   val doobieHikari   = "org.tpolecat" %% "doobie-hikari"   % Versions.doobie
   val doobiePostgres = "org.tpolecat" %% "doobie-postgres" % Versions.doobie
+
+  val finchCore  = "com.github.finagle" %% "finchx-core"  % Versions.finch
+  val finchCirce = "com.github.finagle" %% "finchx-circe" % Versions.finch
 
   val http4sCirce  = "org.http4s" %% "http4s-circe"        % Versions.http4s
   val http4sDsl    = "org.http4s" %% "http4s-dsl"          % Versions.http4s
@@ -94,6 +106,7 @@ object Definitions {
 object Versions {
   val circe          = "0.13.0"
   val doobie         = "0.8.6"
+  val finch          = "0.32.1"
   val http4s         = "0.21.1"
   val jwt            = "4.2.0"
   val logback        = "1.2.3"

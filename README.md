@@ -23,12 +23,16 @@ Prerequisites
 Run
 ===
 
-In memory DB
-------------
+In memory DB and Finagle server
+-------------------------------
 
 ```shell script
 ./sbt app/run
 ```
+
+Http4s server
+-------------
+Add the dependency in the `build.sbt` file and follow the instructions in the `http4s.Server` trait.
 
 Postgres DB
 -----------
@@ -129,5 +133,6 @@ the las line is needed because of the format java uses.
 
 * Sending json thru httpie:
 ```shell script
+echo '{ "id": "Salvador", "secret": "Dalí" }' | http POST http://127.0.0.1:8080/signup -v
 echo '{ "oldCredential": { "id": "Salvador", "secret": "Dalí" }, "newSecret": "lanadanisman" }' | http POST http://127.0.0.1:8080/change-password -v  
 ``` 

@@ -3,11 +3,23 @@ package thewho.server.http4s
 import org.http4s.HttpRoutes
 import org.http4s.server.blaze.BlazeServerBuilder
 import thewho.auth.Authenticator.{ make => auth }
+import thewho.database.module.AuthDatabase
 import thewho.model._
 import thewho.types.{ AppEnv, AppTask }
-import zio.ZIO
+import zio._
 
-object Http4sBlazeServer {
+/**
+ *
+ * Usage:
+ *
+ * object Main extends Server {
+ *   override val dependencies: ZLayer[Any, Throwable, AuthDatabase] = InMemoryAuthDatabase.make
+ * }
+ *
+ */
+trait Server extends App {
+
+  val dependencies: ZLayer[Any, Throwable, AuthDatabase]
 
   private val routes: HttpRoutes[AppTask] = {
 
@@ -35,7 +47,7 @@ object Http4sBlazeServer {
 
   }
 
-  val start: ZIO[AppEnv, Throwable, Unit] = {
+  private val start: ZIO[AppEnv, Throwable, Unit] = {
     import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
     import zio.interop.catz.{ taskEffectInstance, zioTimer }
     ZIO
@@ -49,5 +61,8 @@ object Http4sBlazeServer {
           .drain
       }
   }
+
+  override def run(args: List[String]): ZIO[ZEnv, Nothing, ExitCode] =
+    start.as(ExitCode.success).provideSomeLayer[ZEnv](dependencies).orDie
 
 }

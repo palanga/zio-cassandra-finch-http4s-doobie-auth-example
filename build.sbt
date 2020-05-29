@@ -9,6 +9,7 @@ lazy val root =
       coreCommon,
       dbInMemory,
       dbDoobie,
+      serverFinch,
       serverHttp4s,
       utilsZioTest,
     )
@@ -26,7 +27,8 @@ lazy val app =
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.app.toSeq)
     .dependsOn(
-      serverHttp4s,
+      serverFinch,
+//      serverHttp4s,
       dbInMemory,
     )
 
@@ -62,6 +64,16 @@ lazy val dbDoobie =
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.database.doobie.toSeq)
     .dependsOn(coreCommon)
+
+lazy val serverFinch =
+  (project in file("server/finch"))
+    .settings(name := "server-finch")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.server.finch.toSeq)
+    .dependsOn(
+      core,
+      coreCommon,
+    )
 
 lazy val serverHttp4s =
   (project in file("server/http4s"))
