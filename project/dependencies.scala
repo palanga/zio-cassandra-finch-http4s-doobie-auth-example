@@ -35,6 +35,12 @@ object dependencies {
 
     val inMemory = common ++ commonTest
 
+    val cassandra = common ++ commonTest ++ Set(
+      cassandraCore,
+      cassandraQueryBuilder,
+      cassandraMapperRuntime,
+    )
+
     val doobie = common ++ commonTest ++ Set(
       doobieCore,
       doobieHikari,
@@ -77,6 +83,10 @@ object dependencies {
 
 object Definitions {
 
+  val cassandraCore          = "com.datastax.oss" % "java-driver-core"           % Versions.cassandra
+  val cassandraQueryBuilder  = "com.datastax.oss" % "java-driver-query-builder"  % Versions.cassandra
+  val cassandraMapperRuntime = "com.datastax.oss" % "java-driver-mapper-runtime" % Versions.cassandra
+
   val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
   val circeGeneric = "io.circe" %% "circe-generic" % Versions.circe
   val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -108,6 +118,7 @@ object Definitions {
 }
 
 object Versions {
+  val cassandra      = "4.6.1"
   val circe          = "0.13.0"
   val doobie         = "0.8.6"
   val finch          = "0.32.1"

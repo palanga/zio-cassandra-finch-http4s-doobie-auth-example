@@ -8,6 +8,7 @@ lazy val root =
       core,
       coreCommon,
       dbInMemory,
+      dbCassandra,
       dbDoobie,
       gatling,
       serverFinch,
@@ -64,6 +65,14 @@ lazy val dbInMemory =
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.database.inMemory.toSeq)
     .dependsOn(coreCommon)
+
+lazy val dbCassandra =
+  (project in file("database/cassandra"))
+    .settings(name := "database-cassandra")
+    .settings(commonSettings)
+    .settings(libraryDependencies ++= dependencies.database.cassandra.toSeq)
+    .dependsOn(coreCommon)
+
 
 lazy val dbDoobie =
   (project in file("database/doobie"))
