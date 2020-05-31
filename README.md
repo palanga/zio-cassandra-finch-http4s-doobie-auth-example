@@ -118,6 +118,21 @@ UserCredentialIdRequest:       { token: String }
 UserCredentialIdResponse:      { credentialId: String }
 ```
 
+Test
+====
+
+Load test (Gatling)
+-------------------
+
+```shell script
+./sbt
+```
+
+```sbtshell
+gatling/gatling:test
+```
+
+
 Troubleshooting
 ===============
 

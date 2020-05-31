@@ -9,6 +9,7 @@ lazy val root =
       coreCommon,
       dbInMemory,
       dbDoobie,
+      gatling,
       serverFinch,
       serverHttp4s,
       utilsZioTest,
@@ -21,15 +22,21 @@ val commonSettings =
     fork in Test := true,
   )
 
+val gatlingSettings =
+  Def.settings(
+    scalacOptions := ScalaOptions.gatling,
+    scalaVersion := "2.12.10",
+  )
+
 lazy val app =
   (project in file("app"))
     .settings(name := "app")
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.app.toSeq)
     .dependsOn(
+      dbInMemory,
       serverFinch,
 //      serverHttp4s,
-      dbInMemory,
     )
 
 lazy val core =
@@ -84,6 +91,13 @@ lazy val serverHttp4s =
       core,
       coreCommon,
     )
+
+lazy val gatling =
+  (project in file("gatling"))
+    .settings(name := "gatling")
+    .enablePlugins(GatlingPlugin)
+    .settings(gatlingSettings)
+    .settings(libraryDependencies ++= dependencies.gatling.toSeq)
 
 lazy val utilsZioTest =
   (project in file("utils-zio-test"))

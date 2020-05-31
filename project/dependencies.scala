@@ -44,13 +44,17 @@ object dependencies {
 
   }
 
+  val gatling = Set(
+    "io.gatling"            % "gatling-test-framework"    % Versions.gatling % "test,it",
+    "io.gatling.highcharts" % "gatling-charts-highcharts" % Versions.gatling % "test,it",
+  )
+
   object server {
 
     val finch = common ++ Set(
       finchCore,
       finchCirce,
       zioInteropCats,
-//      "io.circe"           %% "circe-parser"     % circeVersion,
     )
 
     val http4s = common ++ Set(
@@ -107,6 +111,7 @@ object Versions {
   val circe          = "0.13.0"
   val doobie         = "0.8.6"
   val finch          = "0.32.1"
+  val gatling        = "3.3.1"
   val http4s         = "0.21.1"
   val jwt            = "4.2.0"
   val logback        = "1.2.3"

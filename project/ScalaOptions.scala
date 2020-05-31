@@ -47,4 +47,15 @@ object ScalaOptions {
     "-Ylog-classpath",
   )
 
+  val gatling = Seq(
+    "-encoding",
+    "UTF-8",
+    "-target:jvm-1.8",
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-language:implicitConversions",
+    "-language:postfixOps"
+  )
+
 }
