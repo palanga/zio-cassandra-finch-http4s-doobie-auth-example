@@ -1,12 +1,18 @@
 package thewho.database.cassandra
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement
+import thewho.error.DatabaseException.DatabaseDefect
+import thewho.model.{ CredentialId, UserId }
+import zio.ZIO
+
 object cql {
 
+  // TODO simple statement
   def createKeyspace(keyspace: String) =
     s"""
-      |CREATE KEYSPACE $keyspace
-      |  WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
-      |""".stripMargin
+       |CREATE KEYSPACE $keyspace
+       |  WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
+       |""".stripMargin
 
   /**
    *  cred_id | cred_secret | user_id
@@ -40,5 +46,15 @@ object cql {
       |  PRIMARY KEY (user_id)
       |);
       |""".stripMargin
+
+  def selectFromCredentialsWhere(credentialId: CredentialId) =
+    ZIO
+      .effect(
+        SimpleStatement
+          .builder("SELECT * FROM credentials WHERE cred_id=?")
+          .addPositionalValue(credentialId)
+          .build
+      )
+      .mapError(DatabaseDefect)
 
 }

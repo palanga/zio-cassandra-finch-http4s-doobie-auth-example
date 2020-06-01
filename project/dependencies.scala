@@ -39,6 +39,7 @@ object dependencies {
       cassandraCore,
       cassandraQueryBuilder,
       cassandraMapperRuntime,
+      logbackClassic,
     )
 
     val doobie = common ++ commonTest ++ Set(
