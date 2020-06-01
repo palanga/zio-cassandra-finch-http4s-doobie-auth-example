@@ -1,96 +1,46 @@
 the-who
 =======
-
-Who are you ?
-
-Who do you claim you are ?
-
-...
-
-Ok, here's your access token:
-
-![the who](https://pbs.twimg.com/profile_images/836889785528631297/g4iwfxBE.jpg)
+A Scala and ZIO playground which happens to be an auth service.
 
 ----
-
-Prerequisites
-=============
-
-- java 8
-- Docker Desktop 2.0.0.0-mac82 (not needed if running in memory db)
-
 
 Run
 ===
 
-In memory DB and Finagle server
+Finch server and In memory DB 
 -------------------------------
+* `./sbt app/run`
 
-```shell script
-./sbt app/run
-```
+Cassandra DB
+------------
+* `brew install cassandra` (will also install `cqlsh`)
+* Cassandra doesn't work with java 14 (we are using java 11)
+* Some jvm options doesn't work so we have to edit `/usr/local/etc/cassandra/jvm.options`
+* Launch with `cassandra -f`
+* Default host and port is `127.0.0.1:9042`
+* `cqlsh` will connect there by default
+* `CREATE KEYSPACE IF NOT EXISTS thewho_dummy WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };`
+* Stop with `ps` to get the PID and then `kill <PID>`
+* Edit `app/Main` and `build.sbt` to use cassandra instead of in memory db
+
 
 Http4s server
 -------------
-Add the dependency in the `build.sbt` file and follow the instructions in the `http4s.Server` trait.
+* Edit `app/Main` and `build.sbt` to use http4s instead of finch. See `server/http4s/Server`
 
 Postgres DB
 -----------
-
-Add the dependency in the `build.sbt` file and change it in the `Main` function.
-
-Add this line to your `/etc/hosts` file:
-
-```
-127.0.0.1   postgres
-```
-
-Inside the root directory, run the postgres database on docker:
-
-```bash
-docker-compose up
-```
-
-then:
-
-```bash
-./sbt
-```
-
-and once inside the `sbt` shell:
-
-```bash
-app/run
-```
-
-
-Alternatively you can use the revolver plugin to listen for code changes and restart the server automatically.
-
-
-Debug
-=====
-
-To manually query the postgres database:
-
-```bash
-docker exec -it postgres bash
-```
-
-then, login to the database:
-
-```bash
-psql -d postgres -U postgres
-```
-
-now, you can run any query. Start with `\dt` 
-
+* Edit `app/Main` and `build.sbt` to use postgres instead of in memory db
+* Add `127.0.0.1   postgres` to your `/etc/hosts` file
+* `docker-compose up`
+* `docker exec -it postgres bash`
+* `psql -d postgres -U postgres`
 
 Contribute
 ==========
-
 1) Branch off from master
 2) Code
-3) `sbt scalafmtAll` to format the code before pushing.
+3) `./sbt scalafmtAll` to format the code before pushing.
 4) Write [good commit messages](https://github.com/erlang/otp/wiki/writing-good-commit-messages).
     Please reference the issue number in the commit message description
 5) PR to master
@@ -123,28 +73,21 @@ Test
 
 Load test (Gatling)
 -------------------
+* `./sbt gatling/gatling:test`
 
-```shell script
-./sbt
-```
-
-```sbtshell
-gatling/gatling:test
-```
-
+Other tests
+-----------
+* `./sbt test`
 
 Troubleshooting
 ===============
-
 * To generate key pairs:
 ```shell script
 openssl genrsa -out private.pem 1024
 openssl rsa -in private.pem -pubout -outform PEM -out public_key.pem
 openssl pkcs8 -topk8 -inform PEM -in private.pem -out private_key.pem -nocrypt
 ```
-
 the las line is needed because of the format java uses.
-
 
 * Sending json thru httpie:
 ```shell script
