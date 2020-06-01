@@ -27,6 +27,7 @@ object error {
       case object UserNotFound           extends DatabaseError // TODO maybe this is a defect
       case object CredentialNotFound     extends DatabaseError
       case object CredentialAlreadyExist extends DatabaseError
+      case object UserAlreadyExist       extends DatabaseError // TODO defect
     }
 
     case class DatabaseDefect(cause: Throwable) extends AppDefect with DatabaseException

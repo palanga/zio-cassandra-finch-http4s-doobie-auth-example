@@ -71,7 +71,10 @@ lazy val dbCassandra =
     .settings(name := "database-cassandra")
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.database.cassandra.toSeq)
-    .dependsOn(coreCommon)
+    .dependsOn(
+      coreCommon,
+      utilsZioTest,
+    )
 
 
 lazy val dbDoobie =

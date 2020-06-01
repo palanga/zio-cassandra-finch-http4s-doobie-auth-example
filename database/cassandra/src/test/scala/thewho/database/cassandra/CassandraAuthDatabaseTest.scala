@@ -1,22 +1,32 @@
 package thewho.database.cassandra
 
 import thewho.database.{ module => db }
-import thewho.model.{ Credential, User }
+import thewho.model.{ Credential, UnvalidatedCredential }
+import utils.zio.test.syntax.zioops.ZIOOps
+import zio.Schedule.spaced
+import zio.clock.Clock
 import zio.console.Console
-import zio.test.Assertion._
+import zio.duration._
 import zio.test._
+
+import scala.language.postfixOps
 
 object CassandraAuthDatabaseTest extends DefaultRunnableSpec {
 
   val testSuite =
     suite("cassandra")(
+      testM("create user") {
+        val frida = UnvalidatedCredential("Frida", "Kahlo")
+        (db createUser frida) map (_.credential) assertEqualTo Credential(frida.id, frida.secret)
+      },
       testM("find user") {
-        val monet = User(1, Credential("Claude", "Monet"))
-        db findUser "Claude" map (assert(_)(equalTo(monet)))
-      }
+        val miroInput = UnvalidatedCredential("Joan", "Miró")
+        val expected  = Credential(miroInput.id, miroInput.secret)
+        (db createUser miroInput) *> (db findUser miroInput.id) map (_.credential) assertEqualTo expected
+      },
     )
 
-  val dependencies = Console.live >>> CassandraAuthDatabase.dummy
+  val dependencies = Console.live ++ Clock.live >>> CassandraAuthDatabase.dummy.retry(spaced(1 second))
 
   override def spec = testSuite.provideSomeLayerShared[ZTestEnv](dependencies mapError TestFailure.fail)
 

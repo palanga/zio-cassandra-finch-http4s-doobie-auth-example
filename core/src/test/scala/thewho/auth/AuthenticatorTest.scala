@@ -19,8 +19,8 @@ object AuthenticatorTest extends DefaultRunnableSpec {
         auth signup UnvalidatedCredential("Frida", "Kahlo") as assertCompletes
       },
       testM("signup the same user twice should fail") {
-        val monet = UnvalidatedCredential("Joan", "Miró")
-        (auth signup monet) *> (auth signup monet) assertFailsWith CredentialAlreadyExist
+        val miro = UnvalidatedCredential("Joan", "Miró")
+        (auth signup miro) *> (auth signup miro) assertFailsWith CredentialAlreadyExist
       },
       testM("login should succeed") {
         val morisot = UnvalidatedCredential("Berthe", "Morisot")
