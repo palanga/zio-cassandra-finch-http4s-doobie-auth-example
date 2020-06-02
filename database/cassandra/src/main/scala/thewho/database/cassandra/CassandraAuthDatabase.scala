@@ -7,10 +7,9 @@ import com.datastax.oss.driver.api.core.uuid.Uuids
 import thewho.database.module.AuthDatabase
 import thewho.error.DatabaseException
 import thewho.error.DatabaseException.DatabaseDefect
-import thewho.error.DatabaseException.DatabaseError.{ CredentialAlreadyExist, CredentialNotFound, UserAlreadyExist }
 import thewho.model._
 import zio.console.{ putStrLn, Console }
-import zio.{ IO, RLayer, ZIO }
+import zio.{ IO, RLayer }
 
 object CassandraAuthDatabase {
 
@@ -21,48 +20,56 @@ object CassandraAuthDatabase {
   private val datacenter = "datacenter1"
 
   val dummy: RLayer[Console, AuthDatabase] =
-    ZIO
-      .effect(
-        CqlSession
-          .builder()
-          .addContactPoint(address)
-          .withKeyspace(keyspace)
-          .withLocalDatacenter(datacenter)
-          .build()
+    putStrLn("Opening cassandra connection...")
+      .zipRight(
+        ZCqlSession(
+          CqlSession
+            .builder()
+            .addContactPoint(address)
+            .withKeyspace(keyspace)
+            .withLocalDatacenter(datacenter)
+            .build()
+        )
       )
-      .map(CassandraAuthDatabase.fromCqlSession)
-      .tap(_.initialize)
-      .toManaged(_.close.catchAll(t => putStrLn("Failed trying to close cassandra session:\n" + t.getMessage)))
+      .toManaged(closeSession(_).fork)
+      .tap(_ => putStrLn("Initializing cassandra...").toManaged_)
+      .tap(initialize(_).toManaged_)
+      .flatMap(prepareQueries(_).toManaged_)
+      .map(new CassandraAuthDatabase(_))
+      .tap(_ => putStrLn("Cassandra connected and initialized").toManaged_)
+      .tapError(t => putStrLn("Failed trying to build cassandra layer: " + t.getMessage).toManaged_)
       .toLayer
 
-  private def fromCqlSession(cqlSession: CqlSession): CassandraAuthDatabase =
-    new CassandraAuthDatabase(new ZioCqlSession(cqlSession))
+  private def closeSession(session: ZCqlSession) =
+    (putStrLn("Closing cassandra session...") *> session.close <* putStrLn("Closed cassandra session"))
+      .catchAll(t => putStrLn("Failed trying to close cassandra session:\n" + t.getMessage))
+
+  private def initialize(session: ZCqlSession) =
+    session.executePar(cql.dropCredentialsTable, cql.dropCredentialsByUserTable) *>
+      session.executePar(cql.createCredentialsTable, cql.createCredentialsByUserTable)
+
+  private def prepareQueries(zCqlSession: ZCqlSession) =
+    zCqlSession
+      .preparePar(cql.insertIntoCredentials, cql.selectFromCredentials, cql.insertIntoCredentialsByUser)
+      .mapError(DatabaseDefect)
+      .flatMap(Queries(zCqlSession))
 
 }
 
-class CassandraAuthDatabase(session: ZioCqlSession) extends AuthDatabase.Service {
-
-  import thewho.database.cassandra.codec._
+private final class CassandraAuthDatabase(queries: Queries) extends AuthDatabase.Service {
 
   override def createUser(credential: UnvalidatedCredential): IO[DatabaseException, User] = {
     val userId = Uuids.timeBased().hashCode()
-    cql
-      .insertCredentialIfNotExists(credential, userId)
-      .flatMap(session.execute(_) mapError DatabaseDefect)
-      .flatMap(ZIO fail CredentialAlreadyExist when !_.wasApplied()) *>
-      cql
-        .insertCredentialByUserIfNotExists(userId, credential.id)
-        .flatMap(session.execute(_) mapError DatabaseDefect)
-        .flatMap(ZIO fail UserAlreadyExist when !_.wasApplied())
+    queries.credentials
+      .insert(credential, userId) *>
+      queries.credentialsByUser
+        .insert(userId, credential.id)
         .as(User(userId, Credential(credential.id, credential.secret)))
   }
 
   override def findUser(credentialId: CredentialId): IO[DatabaseException, User] =
-    cql
-      .selectFromCredentialsWhere(credentialId)
-      .flatMap(session.executeHead(_) mapError DatabaseDefect)
-      .someOrFail(CredentialNotFound)
-      .flatMap(decode[CredentialsRow])
+    queries.credentials
+      .select(credentialId)
       .map { case (credId, credSecret, userId) => User(userId, Credential(credId, credSecret)) }
 
   override def deleteUser(userId: UserId): IO[DatabaseException, UserId]         = ???
@@ -70,16 +77,5 @@ class CassandraAuthDatabase(session: ZioCqlSession) extends AuthDatabase.Service
   override def findCredentialId(userId: UserId): IO[DatabaseException, CredentialId] = ???
 
   override def updateCredential(credential: Credential): IO[DatabaseException, Credential] = ???
-
-  private val close =
-    putStrLn("closing cassandra session...") *> session.close <* putStrLn("closed cassandra session")
-
-  private def initialize = dropTables *> createTables
-
-  private def dropTables =
-    cql.dropCredentialsTable.flatMap(session.execute) &> cql.dropCredentialsByUserTable.flatMap(session.execute)
-
-  private def createTables =
-    cql.createCredentialsTable.flatMap(session.execute) &> cql.createCredentialsByUserTable.flatMap(session.execute)
 
 }

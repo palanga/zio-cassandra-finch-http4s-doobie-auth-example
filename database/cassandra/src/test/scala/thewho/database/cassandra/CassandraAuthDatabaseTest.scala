@@ -5,7 +5,7 @@ import thewho.model.{ Credential, UnvalidatedCredential }
 import utils.zio.test.syntax.zioops.ZIOOps
 import zio.Schedule.spaced
 import zio.clock.Clock
-import zio.console.Console
+import zio.console.{ putStrLn, Console }
 import zio.duration._
 import zio.test._
 
@@ -26,7 +26,10 @@ object CassandraAuthDatabaseTest extends DefaultRunnableSpec {
       },
     )
 
-  val dependencies = Console.live ++ Clock.live >>> CassandraAuthDatabase.dummy.retry(spaced(1 second))
+  val dependencies =
+    Console.live ++ Clock.live >>> CassandraAuthDatabase.dummy
+      .tapError(_ => putStrLn("Retrying in one second..."))
+      .retry(spaced(1 second))
 
   override def spec = testSuite.provideSomeLayerShared[ZTestEnv](dependencies mapError TestFailure.fail)
 

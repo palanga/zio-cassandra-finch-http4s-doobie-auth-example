@@ -1,11 +1,14 @@
 package thewho.database.cassandra
 
-import com.datastax.oss.driver.api.core.cql.{ SimpleStatement, Statement }
-import thewho.error.DatabaseException.DatabaseDefect
-import thewho.model.{ CredentialId, UnvalidatedCredential, UserId }
-import zio.{ IO, ZIO }
+import com.datastax.oss.driver.api.core.cql.SimpleStatement
 
 object cql {
+
+  val credentials         = "credentials"
+  val credentials_by_user = "credentials_by_user"
+  val cred_id             = "cred_id"
+  val cred_secret         = "cred_secret"
+  val user_id             = "user_id"
 
   // TODO simple statement
   def createKeyspace(keyspace: String) =
@@ -16,15 +19,13 @@ object cql {
 
   val dropCredentialsTable =
     SimpleStatement
-      .builder("""DROP TABLE IF EXISTS credentials;""")
+      .builder(s"""DROP TABLE IF EXISTS $credentials;""")
       .build()
-      .toZIO
 
   val dropCredentialsByUserTable =
     SimpleStatement
-      .builder("""DROP TABLE IF EXISTS credentials_by_user;""")
+      .builder(s"""DROP TABLE IF EXISTS $credentials_by_user;""")
       .build()
-      .toZIO
 
   /**
    *  cred_id | cred_secret | user_id
@@ -36,17 +37,16 @@ object cql {
   val createCredentialsTable =
     SimpleStatement
       .builder(
-        """
-          |CREATE TABLE IF NOT EXISTS credentials (
-          |  cred_id text,
-          |  cred_secret text,
-          |  user_id int,
-          |  PRIMARY KEY (cred_id)
+        s"""
+          |CREATE TABLE IF NOT EXISTS $credentials (
+          |  $cred_id text,
+          |  $cred_secret text,
+          |  $user_id int,
+          |  PRIMARY KEY ($cred_id)
           |);
           |""".stripMargin
       )
       .build()
-      .toZIO
 
   /**
    *  user_id | cred_id
@@ -58,40 +58,29 @@ object cql {
   val createCredentialsByUserTable =
     SimpleStatement
       .builder(
-        """
-          |CREATE TABLE IF NOT EXISTS credentials_by_user (
-          |  user_id int,
-          |  cred_id text,
-          |  PRIMARY KEY (user_id)
+        s"""
+          |CREATE TABLE IF NOT EXISTS $credentials_by_user (
+          |  $user_id int,
+          |  $cred_id text,
+          |  PRIMARY KEY ($user_id)
           |);
           |""".stripMargin
       )
       .build()
-      .toZIO
 
-  def insertCredentialIfNotExists(credential: UnvalidatedCredential, userId: UserId) =
+  val insertIntoCredentials =
     SimpleStatement
-      .builder("INSERT INTO credentials (cred_id , cred_secret , user_id) VALUES (?,?,?) IF NOT EXISTS;")
-      .addPositionalValues(credential.id, credential.secret, userId)
+      .builder(s"INSERT INTO $credentials ($cred_id, $cred_secret, $user_id) VALUES (?,?,?) IF NOT EXISTS;")
       .build()
-      .toZIO
 
-  def insertCredentialByUserIfNotExists(userId: UserId, credentialId: CredentialId) =
+  val selectFromCredentials =
     SimpleStatement
-      .builder("INSERT INTO credentials_by_user (user_id , cred_id ) VALUES (?,?) IF NOT EXISTS;")
-      .addPositionalValues(userId, credentialId)
+      .builder(s"SELECT * FROM $credentials WHERE $cred_id=:$cred_id")
       .build()
-      .toZIO
 
-  def selectFromCredentialsWhere(credentialId: CredentialId) =
+  val insertIntoCredentialsByUser =
     SimpleStatement
-      .builder("SELECT * FROM credentials WHERE cred_id=?")
-      .addPositionalValue(credentialId)
-      .build
-      .toZIO
-
-  implicit class StatementOps[T <: Statement[T]](val self: Statement[T]) extends AnyVal {
-    def toZIO: IO[DatabaseDefect, Statement[T]] = ZIO effect self mapError DatabaseDefect
-  }
+      .builder(s"INSERT INTO $credentials_by_user ($user_id, $cred_id) VALUES (?,?) IF NOT EXISTS;")
+      .build()
 
 }
