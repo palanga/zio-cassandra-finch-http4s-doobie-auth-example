@@ -40,6 +40,7 @@ object dependencies {
       cassandraQueryBuilder,
       cassandraMapperRuntime,
       logbackClassic,
+      zioInteropReactiveStreams,
     )
 
     val doobie = common ++ commonTest ++ Set(
@@ -116,18 +117,21 @@ object Definitions {
 
   val zioInteropCats = "dev.zio" %% "zio-interop-cats" % Versions.zioInteropCats
 
+  val zioInteropReactiveStreams = "dev.zio" %% "zio-interop-reactivestreams" % Versions.zioInteropReactiveStreams
+
 }
 
 object Versions {
-  val cassandra      = "4.6.1"
-  val circe          = "0.13.0"
-  val doobie         = "0.8.6"
-  val finch          = "0.32.1"
-  val gatling        = "3.3.1"
-  val http4s         = "0.21.1"
-  val jwt            = "4.2.0"
-  val logback        = "1.2.3"
-  val scalatest      = "3.1.2"
-  val zio            = "1.0.0-RC20"
-  val zioInteropCats = "2.1.3.0-RC15"
+  val cassandra                 = "4.6.1"
+  val circe                     = "0.13.0"
+  val doobie                    = "0.8.6"
+  val finch                     = "0.32.1"
+  val gatling                   = "3.3.1"
+  val http4s                    = "0.21.1"
+  val jwt                       = "4.2.0"
+  val logback                   = "1.2.3"
+  val scalatest                 = "3.1.2"
+  val zio                       = "1.0.0-RC20"
+  val zioInteropCats            = "2.1.3.0-RC15"
+  val zioInteropReactiveStreams = "1.0.3.5-RC10"
 }

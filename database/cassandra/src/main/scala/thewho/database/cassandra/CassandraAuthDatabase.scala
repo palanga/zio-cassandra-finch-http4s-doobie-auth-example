@@ -3,7 +3,6 @@ package thewho.database.cassandra
 import java.net.InetSocketAddress
 
 import com.datastax.oss.driver.api.core.CqlSession
-import com.datastax.oss.driver.api.core.cql.{ Row, Statement }
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import thewho.database.module.AuthDatabase
 import thewho.error.DatabaseException
@@ -31,52 +30,37 @@ object CassandraAuthDatabase {
           .withLocalDatacenter(datacenter)
           .build()
       )
-      .map(new CassandraAuthDatabase(_))
+      .map(CassandraAuthDatabase.fromCqlSession)
       .tap(_.initialize)
-      .toManaged(_.shutDown.catchAll(t => putStrLn("Error trying to close cassandra session: " + t.getMessage)))
+      .toManaged(_.close.catchAll(t => putStrLn("Failed trying to close cassandra session:\n" + t.getMessage)))
       .toLayer
 
-  private type Decoder[T]           = Row => T
-  private type CredentialsRow       = (CredentialId, CredentialId, UserId)
-  private type CredentialsByUserRow = (UserId, CredentialId)
-
-  private def decode[T](row: Row)(implicit decode: Decoder[T])          = ZIO effect decode(row) mapError DatabaseDefect
-  private implicit def credDecoder: Decoder[CredentialsRow]             = row => (row.getString(0), row.getString(1), row.getInt(2))
-  private implicit def credByUserDecoder: Decoder[CredentialsByUserRow] = row => (row.getInt(0), row.getString(1))
-  private implicit def booleanDecoder: Decoder[Boolean]                 = row => row.getBoolean(0)
+  private def fromCqlSession(cqlSession: CqlSession): CassandraAuthDatabase =
+    new CassandraAuthDatabase(new ZioCqlSession(cqlSession))
 
 }
 
-class CassandraAuthDatabase(session: CqlSession) extends AuthDatabase.Service {
+class CassandraAuthDatabase(session: ZioCqlSession) extends AuthDatabase.Service {
 
-  import CassandraAuthDatabase._
-
-  private def execute[T <: Statement[T]](s: Statement[T]) = ZIO effect (session execute s) mapError DatabaseDefect
+  import thewho.database.cassandra.codec._
 
   override def createUser(credential: UnvalidatedCredential): IO[DatabaseException, User] = {
     val userId = Uuids.timeBased().hashCode()
     cql
       .insertCredentialIfNotExists(credential, userId)
-      .flatMap(execute)
-      .map(results => Option(results.one()))
-      .someOrFail(DatabaseDefect(new NoSuchElementException("Inserting returned empty")))
-      .flatMap(decode[Boolean])
-      .flatMap(ZIO fail CredentialAlreadyExist when !_)
-      .zipRight(cql insertCredentialByUserIfNotExists (userId, credential.id))
-      .flatMap(execute)
-      .map(results => Option(results.one()))
-      .someOrFail(DatabaseDefect(new NoSuchElementException("Inserting returned empty")))
-      .flatMap(decode[Boolean])
-      .flatMap(ZIO fail UserAlreadyExist when !_)
-      .as(User(userId, Credential(credential.id, credential.secret)))
+      .flatMap(session.execute(_) mapError DatabaseDefect)
+      .flatMap(ZIO fail CredentialAlreadyExist when !_.wasApplied()) *>
+      cql
+        .insertCredentialByUserIfNotExists(userId, credential.id)
+        .flatMap(session.execute(_) mapError DatabaseDefect)
+        .flatMap(ZIO fail UserAlreadyExist when !_.wasApplied())
+        .as(User(userId, Credential(credential.id, credential.secret)))
   }
 
   override def findUser(credentialId: CredentialId): IO[DatabaseException, User] =
     cql
       .selectFromCredentialsWhere(credentialId)
-      .flatMap(execute)
-      .map(_.one())
-      .map(Option.apply)
+      .flatMap(session.executeHead(_) mapError DatabaseDefect)
       .someOrFail(CredentialNotFound)
       .flatMap(decode[CredentialsRow])
       .map { case (credId, credSecret, userId) => User(userId, Credential(credId, credSecret)) }
@@ -87,15 +71,15 @@ class CassandraAuthDatabase(session: CqlSession) extends AuthDatabase.Service {
 
   override def updateCredential(credential: Credential): IO[DatabaseException, Credential] = ???
 
-  private val shutDown =
-    putStrLn("closing cassandra session...") *> (ZIO effect session.close()) <* putStrLn("closed cassandra session")
+  private val close =
+    putStrLn("closing cassandra session...") *> session.close <* putStrLn("closed cassandra session")
 
   private def initialize = dropTables *> createTables
 
   private def dropTables =
-    cql.dropCredentialsTable.flatMap(execute) &> cql.dropCredentialsByUserTable.flatMap(execute)
+    cql.dropCredentialsTable.flatMap(session.execute) &> cql.dropCredentialsByUserTable.flatMap(session.execute)
 
   private def createTables =
-    cql.createCredentialsTable.flatMap(execute) &> cql.createCredentialsByUserTable.flatMap(execute)
+    cql.createCredentialsTable.flatMap(session.execute) &> cql.createCredentialsByUserTable.flatMap(session.execute)
 
 }
