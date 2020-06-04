@@ -68,19 +68,4 @@ object cql {
       )
       .build()
 
-  val insertIntoCredentials =
-    SimpleStatement
-      .builder(s"INSERT INTO $credentials ($cred_id, $cred_secret, $user_id) VALUES (?,?,?) IF NOT EXISTS;")
-      .build()
-
-  val selectFromCredentials =
-    SimpleStatement
-      .builder(s"SELECT * FROM $credentials WHERE $cred_id=:$cred_id")
-      .build()
-
-  val insertIntoCredentialsByUser =
-    SimpleStatement
-      .builder(s"INSERT INTO $credentials_by_user ($user_id, $cred_id) VALUES (?,?) IF NOT EXISTS;")
-      .build()
-
 }

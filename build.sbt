@@ -35,9 +35,9 @@ lazy val app =
     .settings(commonSettings)
     .settings(libraryDependencies ++= dependencies.app.toSeq)
     .dependsOn(
+      dbCassandra,
       dbInMemory,
       serverFinch,
-//      serverHttp4s,
     )
 
 lazy val core =

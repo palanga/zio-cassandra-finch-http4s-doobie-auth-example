@@ -122,7 +122,7 @@ object Definitions {
 }
 
 object Versions {
-  val cassandra                 = "4.6.1"
+  val cassandra                 = "4.2.2"
   val circe                     = "0.13.0"
   val doobie                    = "0.8.6"
   val finch                     = "0.32.1"

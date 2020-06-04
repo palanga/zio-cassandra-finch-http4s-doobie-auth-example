@@ -19,10 +19,14 @@ object CassandraAuthDatabaseTest extends DefaultRunnableSpec {
         val frida = UnvalidatedCredential("Frida", "Kahlo")
         (db createUser frida) map (_.credential) assertEqualTo Credential(frida.id, frida.secret)
       },
-      testM("find user") {
+      testM("create and find user") {
         val miroInput = UnvalidatedCredential("Joan", "Miró")
         val expected  = Credential(miroInput.id, miroInput.secret)
         (db createUser miroInput) *> (db findUser miroInput.id) map (_.credential) assertEqualTo expected
+      },
+      testM("create, find and delete nik because we don't want him in our db") {
+        val nik = UnvalidatedCredential("nik", "chorro")
+        (db createUser nik) *> (db findUser nik.id) flatMap (db deleteUser _.id) as assertCompletes
       },
     )
 
