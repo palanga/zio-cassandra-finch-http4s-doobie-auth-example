@@ -7,22 +7,22 @@ object utils {
 
   val httpProtocol = http.baseUrl("http://localhost:8080")
 
-  val signup =
+  def signup(id: Int) =
     http("signup")
       .post("/signup")
-      .body(StringBody(session => s"""{ "id": "${session.userId}", "secret": "Dalí" }"""))
+      .body(StringBody(session => s"""{ "id": "$id-${session.userId}", "secret": "Dalí" }"""))
       .asJson
 
-  val login =
+  def login(id: Int) =
     http("login")
       .post("/login")
-      .body(StringBody(session => s"""{ "id": "${session.userId}", "secret": "Dalí" }"""))
+      .body(StringBody(session => s"""{ "id": "$id-${session.userId}", "secret": "Dalí" }"""))
       .asJson
 
-  val signout =
+  def signout(id: Int) =
     http("signout")
       .post("/signout")
-      .body(StringBody(session => s"""{ "id": "${session.userId}", "secret": "Dalí" }"""))
+      .body(StringBody(session => s"""{ "id": "$id-${session.userId}", "secret": "Dalí" }"""))
       .asJson
 
 }

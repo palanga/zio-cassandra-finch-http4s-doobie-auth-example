@@ -6,7 +6,7 @@ import scala.language.postfixOps
 class LogIn extends Simulation {
   setUp(
     scenario("log in")
-      .exec(utils.login)
-      .inject(heavisideUsers(utils.userCount) during (utils.userCount / 400 seconds))
+      .exec(utils.login(0))
+      .inject(heavisideUsers(utils.userCount) during (utils.userCount / 450 seconds))
   ).protocols(utils.httpProtocol)
 }

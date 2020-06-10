@@ -6,7 +6,7 @@ import scala.language.postfixOps
 class SignOut extends Simulation {
   setUp(
     scenario("sign out")
-      .exec(utils.signout)
-      .inject(constantUsersPerSec(300) during (utils.userCount / 300 second))
+      .exec(utils.signout(0))
+      .inject(constantUsersPerSec(370) during (utils.userCount / 370 seconds))
   ).protocols(utils.httpProtocol)
 }

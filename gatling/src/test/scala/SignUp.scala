@@ -6,7 +6,7 @@ import scala.language.postfixOps
 class SignUp extends Simulation {
   setUp(
     scenario("sign up")
-      .exec(utils.signup)
-      .inject(constantUsersPerSec(300) during (utils.userCount / 300 second))
+      .exec(utils.signup(0))
+      .inject(constantUsersPerSec(370) during (utils.userCount / 370 seconds))
   ).protocols(utils.httpProtocol)
 }
