@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.core.cql._
 import thewho.database.cassandra.adapter.CassandraException._
 import thewho.database.cassandra.adapter.ZCqlSession.decode
 import zio.stream.{ Stream, ZStream }
-import zio.{ IO, Ref, ZIO }
+import zio.{ Chunk, IO, Ref, ZIO }
 
 object ZCqlSession {
 
@@ -28,7 +28,7 @@ final class ZCqlSession private (
   def close: IO[SessionCloseException, Unit] =
     ZIO effect self.close() mapError SessionCloseException
 
-  def execute(s: ZStatement[_]): IO[CassandraException, ResultSet] =
+  def execute(s: ZStatement[_]): IO[CassandraException, AsyncResultSet] =
     preparedStatements.get.flatMap(_.get(s.statement).fold(prepare(s) flatMap executePrepared(s))(executePrepared(s)))
 
   def executeHeadOption[Out](s: ZStatement[Out]): IO[CassandraException, Option[Out]] =
@@ -44,7 +44,7 @@ final class ZCqlSession private (
 
   /**
    * Execute a simple statement without first calculating and caching its prepared statement.
-   * Use some of the other alternatives for automatic preparation and caching.
+   * Use some of the other alternatives for automatically preparing and caching statements.
    */
   def executeSimple(s: SimpleStatement): IO[QueryExecutionException, ResultSet] =
     ZIO effect (self execute s) mapError QueryExecutionException(s)
@@ -55,24 +55,35 @@ final class ZCqlSession private (
   def executeSimplePar(ss: SimpleStatement*): IO[QueryExecutionException, List[ResultSet]] =
     ZIO collectAllPar (ss map executeSimple)
 
-  def list[Out](s: ZStatement[Out]): IO[CassandraException, List[Out]] = stream(s).runCollect
-
   /**
-   * This version of the datastax driver doesn't support reactive streams but the version that does it's incompatible
+   * This version of the datastax driver doesn't support reactive streams but the version that does is incompatible
    * with the last version of finch.
+   *
+   * @return A stream of chunks, every chunk representing a page.
    */
-  def stream[Out](s: ZStatement[Out]): Stream[CassandraException, Out] =
-    ZStream
-      .fromJavaIteratorEffect(execute(s) map (_.iterator()))
-      .mapError(QueryExecutionException(s.statement)(_))
-      .mapM(decode(s))
+  def stream[Out](s: ZStatement[Out]): Stream[CassandraException, Chunk[Out]] = {
 
-  private def executePrepared(s: ZStatement[_])(ps: PreparedStatement): IO[QueryExecutionException, ResultSet] =
-    ZIO effect self.execute(s.bind(ps)) mapError QueryExecutionException(s.statement)
+    import scala.jdk.CollectionConverters._
+
+    def paginate(initial: AsyncResultSet) =
+      ZStream.paginateM(initial) { current: AsyncResultSet =>
+        if (!current.hasMorePages) ZIO succeed (current -> None)
+        else ZIO fromCompletionStage current.fetchNextPage() map { next: AsyncResultSet => current -> Some(next) }
+      } mapError QueryExecutionException(s.statement)
+
+    ZStream
+      .fromEffect(execute(s))
+      .flatMap(paginate)
+      .mapM(Chunk fromIterable _.currentPage().asScala mapM decode(s) mapError DecodeException(s))
+
+  }
+
+  private def executePrepared(s: ZStatement[_])(ps: PreparedStatement): IO[QueryExecutionException, AsyncResultSet] =
+    ZIO fromCompletionStage self.executeAsync(s bind ps) mapError QueryExecutionException(s.statement)
 
   private def prepare(s: ZStatement[_]): IO[PrepareStatementException, PreparedStatement] =
     ZIO
-      .effect(self prepare s.statement) // TODO logging
+      .fromCompletionStage(self prepareAsync s.statement) // TODO logging
       .mapError(PrepareStatementException(s.statement))
       .tap(ps => preparedStatements.update(_ + (s.statement -> ps)))
 
