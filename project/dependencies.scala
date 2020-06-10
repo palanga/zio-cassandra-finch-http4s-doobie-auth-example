@@ -40,7 +40,6 @@ object dependencies {
       cassandraQueryBuilder,
       cassandraMapperRuntime,
       logbackClassic,
-      zioInteropReactiveStreams,
     )
 
     val doobie = common ++ commonTest ++ Set(
