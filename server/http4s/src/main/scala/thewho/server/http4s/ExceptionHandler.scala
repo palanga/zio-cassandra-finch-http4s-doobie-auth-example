@@ -4,7 +4,12 @@ import org.http4s.Challenge
 import org.http4s.headers.`WWW-Authenticate`
 import thewho.error.AuthException.AuthError
 import thewho.error.DatabaseException.DatabaseError
-import thewho.error.DatabaseException.DatabaseError.{ CredentialAlreadyExist, CredentialNotFound, UserNotFound }
+import thewho.error.DatabaseException.DatabaseError.{
+  CredentialAlreadyExist,
+  CredentialNotFound,
+  UserAlreadyExist,
+  UserNotFound,
+}
 import thewho.error._
 import zio.Task
 import zio.interop.catz._
@@ -29,8 +34,8 @@ object ExceptionHandler {
 
   private def databaseErrorResponseMapper(e: DatabaseError) =
     e match {
-      case UserNotFound | CredentialNotFound => NotFound()
-      case CredentialAlreadyExist            => Conflict()
+      case UserNotFound | CredentialNotFound         => NotFound()
+      case UserAlreadyExist | CredentialAlreadyExist => Conflict()
     }
 
   private def authErrorResponseMapper(e: AuthError) =
