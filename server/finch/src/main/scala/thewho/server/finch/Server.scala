@@ -9,7 +9,9 @@ import thewho.auth.Authenticator
 import thewho.model._
 import thewho.types.AppEnv
 import zio.interop.catz._
-import zio.{ Runtime, Task }
+import zio.{ Runtime, Task, ZIO }
+
+import scala.concurrent.Future
 
 /**
  *
@@ -30,29 +32,31 @@ trait Server extends Endpoint.Module[Task] with App {
 
   private val signup: Endpoint[Task, TokenResponse] =
     post("signup" :: jsonBody[UnvalidatedCredential]) { cred: UnvalidatedCredential =>
-      Created(runtime.unsafeRun(auth.signup(cred).map(TokenResponse)))
+      execute(auth.signup(cred) map TokenResponse map Created)
     }
 
   private val login: Endpoint[Task, TokenResponse] =
     post("login" :: jsonBody[UnvalidatedCredential]) { cred: UnvalidatedCredential =>
-      Ok(runtime.unsafeRun(auth.login(cred).map(TokenResponse)))
+      execute(auth.login(cred) map TokenResponse map Ok)
     }
 
   private val changePassword: Endpoint[Task, TokenResponse] =
     post("change-password" :: jsonBody[CredentialSecretUpdateRequest]) { body: CredentialSecretUpdateRequest =>
-      Ok(runtime.unsafeRun(auth.changePassword(body.oldCredential, body.newSecret).map(TokenResponse)))
+      execute(auth.changePassword(body.oldCredential, body.newSecret) map TokenResponse map Ok)
     }
 
   private val signout: Endpoint[Task, String] =
     post("signout" :: jsonBody[UnvalidatedCredential]) { cred: UnvalidatedCredential =>
-      runtime.unsafeRun(auth.signout(cred))
-      if (true) NoContent else Ok("hack")
+      if (true) execute(auth.signout(cred) as NoContent)
+      else execute(auth.signout(cred) as Ok("hack"))
     }
 
   private val findCredentialId: Endpoint[Task, UserCredentialIdResponse] =
     post("find-credential-id" :: jsonBody[UserCredentialIdRequest]) { body: UserCredentialIdRequest =>
-      Ok(runtime.unsafeRun(auth.findCredentialId(body.token).map(UserCredentialIdResponse)))
+      execute(auth.findCredentialId(body.token) map UserCredentialIdResponse map Ok)
     }
+
+  private def execute[E <: Throwable, A](zio: ZIO[AppEnv, E, A]): Future[A] = runtime.unsafeRunToFuture(zio).future
 
   private val endpoints = (
     signup
