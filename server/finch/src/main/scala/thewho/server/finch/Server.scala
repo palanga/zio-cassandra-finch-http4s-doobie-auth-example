@@ -26,9 +26,11 @@ import scala.concurrent.Future
  */
 trait Server extends Endpoint.Module[Task] with App {
 
-  val auth = Authenticator.make
-
   implicit val runtime: Runtime[AppEnv]
+
+  def start() = Await.ready(Http.server.serve(":8080", endpoints.toService))
+
+  private val auth = Authenticator.make
 
   private val signup: Endpoint[Task, TokenResponse] =
     post("signup" :: jsonBody[UnvalidatedCredential]) { cred: UnvalidatedCredential =>
@@ -47,16 +49,13 @@ trait Server extends Endpoint.Module[Task] with App {
 
   private val signout: Endpoint[Task, String] =
     post("signout" :: jsonBody[UnvalidatedCredential]) { cred: UnvalidatedCredential =>
-      if (true) execute(auth.signout(cred) as NoContent)
-      else execute(auth.signout(cred) as Ok("hack"))
+      execute(auth.signout(cred) as NoContent[String])
     }
 
   private val findCredentialId: Endpoint[Task, UserCredentialIdResponse] =
     post("find-credential-id" :: jsonBody[UserCredentialIdRequest]) { body: UserCredentialIdRequest =>
       execute(auth.findCredentialId(body.token) map UserCredentialIdResponse map Ok)
     }
-
-  private def execute[E <: Throwable, A](zio: ZIO[AppEnv, E, A]): Future[A] = runtime.unsafeRunToFuture(zio).future
 
   private val endpoints = (
     signup
@@ -66,11 +65,11 @@ trait Server extends Endpoint.Module[Task] with App {
       :+: findCredentialId
   ) handle errorHandler
 
+  private def execute[E <: Throwable, A](zio: ZIO[AppEnv, E, A]): Future[A] = runtime.unsafeRunToFuture(zio).future
+
   private def errorHandler[T]: PartialFunction[Throwable, Output[T]] = {
     case e: Exception => BadRequest(e)
     case _            => BadRequest(new Exception())
   }
-
-  def start() = Await.ready(Http.server.serve(":8080", endpoints.toService))
 
 }
