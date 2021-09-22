@@ -53,7 +53,7 @@ final class ZCqlSession private (
    * The same as [[executeSimple]] but in parallel.
    */
   def executeSimplePar(ss: SimpleStatement*): IO[QueryExecutionException, List[ResultSet]] =
-    ZIO collectAllPar (ss map executeSimple)
+    ZIO collectAllPar (ss.toList map executeSimple)
 
   /**
    * This version of the datastax driver doesn't support reactive streams but the version that does is incompatible

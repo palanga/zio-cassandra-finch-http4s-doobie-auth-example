@@ -130,7 +130,7 @@ object Versions {
   val jwt                       = "4.2.0"
   val logback                   = "1.2.3"
   val scalatest                 = "3.1.2"
-  val zio                       = "1.0.0-RC20"
-  val zioInteropCats            = "2.1.3.0-RC15"
-  val zioInteropReactiveStreams = "1.0.3.5-RC10"
+  val zio                       = "1.0.3"
+  val zioInteropCats            = "2.2.0.1"
+  val zioInteropReactiveStreams = "1.3.0.7-1"
 }

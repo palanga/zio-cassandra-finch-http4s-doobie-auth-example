@@ -3,7 +3,7 @@ import io.gatling.http.Predef._
 
 object utils {
 
-  val userCount = 10000
+  val userCount = 1000
 
   val httpProtocol = http.baseUrl("http://localhost:8080")
 

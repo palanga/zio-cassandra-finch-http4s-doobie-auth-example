@@ -37,7 +37,7 @@ lazy val app =
     .dependsOn(
       dbCassandra,
       dbInMemory,
-      serverFinch,
+      serverHttp4s,
     )
 
 lazy val core =
